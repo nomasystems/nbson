@@ -1,0 +1,8 @@
+{application, nbson, [
+    {description, "Erlang encoder/decoder for BSON files"},
+    {vsn, "0.1.0"},
+    {applications, [
+        kernel,
+        stdlib
+    ]}
+]}.
