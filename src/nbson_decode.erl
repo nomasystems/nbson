@@ -131,12 +131,10 @@ cstring(<<Bin/binary>>, Next) ->
     Len = cstring_len(Bin, 0),
     string(Bin, Len, Next).
 
-
 cstring_len(<<?NULL, _Rest/binary>>, Len) ->
     Len;
 cstring_len(<<_C, Rest/binary>>, Len) ->
     cstring_len(Rest, Len + 1).
-
 
 string(Base, Len, Next) ->
     <<String:Len/binary, ?NULL, Bin/binary>> = Base,
