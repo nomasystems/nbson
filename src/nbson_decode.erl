@@ -128,13 +128,15 @@ pointer(<<?BITS96(Id), Bin/binary>>, Next) ->
     next(Bin, Id, Next).
 
 cstring(<<Bin/binary>>, Next) ->
-    cstring(Bin, Bin, 0, Next).
+    Len = cstring_len(Bin, 0),
+    string(Bin, Len, Next).
 
-cstring(<<?NULL, Bin/binary>>, Base, Len, Next) ->
-    String = binary:part(Base, 0, Len),
-    next(Bin, String, Next);
-cstring(<<_C, Bin/binary>>, Base, Len, Next) ->
-    cstring(Bin, Base, Len + 1, Next).
+
+cstring_len(<<?NULL, _Rest/binary>>, Len) ->
+    Len;
+cstring_len(<<_C, Rest/binary>>, Len) ->
+    cstring_len(Rest, Len + 1).
+
 
 string(Base, Len, Next) ->
     <<String:Len/binary, ?NULL, Bin/binary>> = Base,
