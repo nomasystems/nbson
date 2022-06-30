@@ -153,14 +153,21 @@ double(_Config) ->
 embdoc() ->
     [{userdata, [{doc, "Tests embdoc data type BSON decoder API."}]}].
 embdoc(_Config) ->
-    BaseBin =
+    BaseBin1 =
         <<28, 0, 0, 0, 3, 100, 111, 99, 0, 18, 0, 0, 0, 2, 111, 110, 101, 0, 4, 0, 0, 0, 111, 110,
             101, 0, 0, 0>>,
-    {[[{<<"doc">>, [{<<"one">>, <<"one">>}]}]], <<>>} = nbson_decode:decode(BaseBin),
+    {[[{<<"doc">>, [{<<"one">>, <<"one">>}]}]], <<>>} = nbson_decode:decode(BaseBin1),
 
-    CodedDoc = nbson_encode:encode([{<<"doc">>, [{<<"one">>, <<"one">>}]}]),
+    CodedDoc1 = nbson_encode:encode([{<<"doc">>, [{<<"one">>, <<"one">>}]}]),
     <<28, 0, 0, 0, 3, 100, 111, 99, 0, 18, 0, 0, 0, 2, 111, 110, 101, 0, 4, 0, 0, 0, 111, 110, 101,
-        0, 0, 0>> = CodedDoc.
+        0, 0, 0>> = CodedDoc1,
+
+    BaseBin2 =
+        <<17, 0, 0, 0, 3, 101, 109, 112, 116, 121, 0, 5, 0, 0, 0, 0, 0>>,
+    {[[{<<"empty">>, [{}]}]], <<>>} = nbson_decode:decode(BaseBin2),
+
+    CodedDoc2 = nbson_encode:encode([{<<"empty">>, [{}]}]),
+    <<17, 0, 0, 0, 3, 101, 109, 112, 116, 121, 0, 5, 0, 0, 0, 0, 0>> = CodedDoc2.
 
 js() ->
     [{userdata, [{doc, "Tests javascript data type BSON decoder API."}]}].
