@@ -30,9 +30,7 @@ encode(undefined) ->
 encode(Document) when is_map(Document), map_size(Document) == 0 ->
     ?EMPTY_DOC;
 encode(Document) when is_map(Document) ->
-    encode_map(Document);
-encode(Documents) when is_list(Documents), is_map(hd(Documents)) ->
-    encode_list(Documents).
+    encode_map(Document).
 
 
 
