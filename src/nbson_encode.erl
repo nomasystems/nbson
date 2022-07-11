@@ -19,36 +19,54 @@
 %%% EXTERNAL EXPORTS
 -export([encode/1]).
 
+%%% MACROS
+-define(EMPTY_DOC, <<?INT32(5), ?NULL>>).
+
 %%%-----------------------------------------------------------------------------
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
 encode(undefined) ->
     <<>>;
-encode([{}]) ->
-    <<?INT32(5), ?NULL>>;
-encode(Document) when is_tuple(hd(Document)) ->
-    Encoded = encode(Document, <<>>),
-    <<?INT32(byte_size(Encoded) + 5), Encoded/binary, ?NULL>>.
+encode(Document) when is_map(Document), map_size(Document) == 0 ->
+    ?EMPTY_DOC;
+encode(Document) when is_map(Document) ->
+    encode_map(Document);
+encode(Documents) when is_list(Documents), is_map(hd(Documents)) ->
+    encode_list(Documents).
+
+
 
 %%%-----------------------------------------------------------------------------
 %%% INTERNAL FUNCTIONS
 %%%-----------------------------------------------------------------------------
-encode([], Acc) ->
-    Acc;
-encode([{Label, Value} | Rest], Acc) ->
+encode_list([]) ->
+    ?EMPTY_DOC;
+encode_list(Documents) ->
+    {_, Encoded} = lists:foldl(fun list_fold_encode/2, {0, <<>>}, Documents),
+    <<?INT32(byte_size(Encoded) + 5), Encoded/binary, ?NULL>>.
+
+list_fold_encode(Document, {Pos, Acc}) ->
+    {Type, Payload} = encode_value(Document),
+    {Pos+1, <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Pos)), Payload/binary>>}.
+
+
+encode_map(Document) ->
+    Encoded = maps:fold(fun map_fold_encode/3, <<>>, Document),
+    <<?INT32(byte_size(Encoded) + 5), Encoded/binary, ?NULL>>.
+
+map_fold_encode(Label, Value, Acc) ->
     {Type, Payload} = encode_value(Value),
-    encode(Rest, <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Label)), Payload/binary>>).
+    <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Label)), Payload/binary>>.
+
 
 encode_value(V) when is_float(V) ->
     {?DOUBLE_TYPE, <<?DOUBLE(V)>>};
 encode_value(V) when is_binary(V) ->
     {?STRING_TYPE, <<?INT32(byte_size(V) + 1), ?CSTRING(V)>>};
-encode_value(V) when is_tuple(hd(V)), is_binary(element(1, (hd(V)))) ->
+encode_value(V) when is_map(V) ->
     {?EMBDOC_TYPE, encode(V)};
-encode_value([]) ->
-    {?ARRAY_TYPE, encode([{}])};
 encode_value(V) when is_list(V) ->
-    {?ARRAY_TYPE, encode(lists:zip(lists:seq(0, length(V) - 1), V))};
+    {?ARRAY_TYPE, encode_list(V)};
 encode_value({data, binary, Data}) when is_binary(Data) ->
     {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(0), Data/binary>>};
 encode_value({data, function, Data}) when is_binary(Data) ->
@@ -100,9 +118,8 @@ encode_value(max_key) ->
 encode_value(min_key) ->
     {?MINKEY_TYPE, <<>>}.
 
+
 encode_label(Label) when is_integer(Label) ->
-    list_to_binary(integer_to_list(Label));
-encode_label(Label) when is_atom(Label) ->
-    erlang:atom_to_binary(Label, utf8);
+    integer_to_binary(Label);
 encode_label(Label) when is_binary(Label) ->
     Label.
