@@ -67,7 +67,9 @@ document(<<?INT32(_Size), Bin/binary>>, Elements, Next) ->
 
 elist(<<0, Bin/binary>>, document, Map, Next) when is_map(Map), map_size(Map) == 0 ->
     next(Bin, #{}, Next);
-elist(<<0, Bin/binary>>, _Kind, Elements, Next) ->
+elist(<<0, Bin/binary>>, array, Elements, Next) ->
+    next(Bin, lists:reverse(Elements), Next);
+elist(<<0, Bin/binary>>, document, Elements, Next) ->
     next(Bin, Elements, Next);
 elist(<<Bin/binary>>, Kind, Elements, Next) ->
     elem(Bin, Kind, Elements, Next).
