@@ -450,7 +450,13 @@ multi(_Config) ->
         }
     ],
     Encoded = nbson:encode(Documents),
-    Documents = nbson:decode(Encoded).
+    Documents = nbson:decode(Encoded),
+
+    {Part, _Rest} = erlang:split_binary(Encoded, byte_size(Encoded) - 100),
+    {PartDocuments, _RestDecoding} = nbson:decode(Part),
+    true = (length(PartDocuments) < length(Documents)),
+    ok.
+ 
 
 various() ->
     [{userdata, [{doc, "Tests various previously untested cases."}]}].

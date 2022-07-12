@@ -15,6 +15,7 @@
 
 %%% INCLUDES
 -include("nbson.hrl").
+-include("nbson_bson_types.hrl").
 
 %%% EXTERNAL EXPORTS
 -export([encode/1, decode/1]).
@@ -38,7 +39,7 @@ encode(Data) when is_list(Data), is_map(hd(Data)) ->
 decode(Data) ->
     decode_all(Data, []).
 
-decode_all(Data, Acc) ->
+decode_all(<<?INT32(Size), _Rest/binary>> = Data, Acc) when byte_size(Data) >= Size ->
     case nbson_decode:decode(Data) of
         {Doc, <<>>} when Acc == [] ->
             Doc;
@@ -46,4 +47,6 @@ decode_all(Data, Acc) ->
             lists:reverse([Doc | Acc]);
         {Doc, Rest} ->
             decode_all(Rest, [Doc | Acc])
-    end.
+    end;
+decode_all(Data, Acc) ->
+    {lists:reverse(Acc), Data}.
