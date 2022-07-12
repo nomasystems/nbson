@@ -17,39 +17,31 @@
 -include("nbson.hrl").
 
 %%% EXTERNAL EXPORTS
--export([encode/1, encode_all/1, decode/1, decode_all/1]).
+-export([encode/1, decode/1]).
 
 %%%-----------------------------------------------------------------------------
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
 -spec encode(Data) -> Result when
     Data :: document(),
-    Result :: binary().
+    Result :: binary() | list(binary()).
 encode(undefined) ->
     <<>>;
 encode(Data) when is_map(Data) ->
-    nbson_encode:encode(Data).
-
--spec encode_all(Data) -> Result when
-    Data :: list(document()),
-    Result :: binary().
-encode_all(Data) when is_list(Data), is_map(hd(Data)) ->
+    nbson_encode:encode(Data);
+encode(Data) when is_list(Data), is_map(hd(Data)) ->
     <<<<<<(nbson_encode:encode(Doc))/binary>> || Doc <- Data>>/binary>>.
 
 -spec decode(Data) -> Result when
     Data :: binary(),
-    Result :: document().
+    Result :: document() | list(document()).
 decode(Data) ->
-    element(1, nbson_decode:decode(Data)).
-
--spec decode_all(Data) -> Result when
-    Data :: binary(),
-    Result :: {list(document()), binary()}.
-decode_all(Data) ->
     decode_all(Data, []).
 
 decode_all(Data, Acc) ->
     case nbson_decode:decode(Data) of
+        {Doc, <<>>} when Acc == [] ->
+            Doc;
         {Doc, <<>>} ->
             lists:reverse([Doc | Acc]);
         {Doc, Rest} ->

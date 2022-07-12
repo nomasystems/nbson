@@ -449,8 +449,8 @@ multi(_Config) ->
             <<"undefined-2g==">> => undefined
         }
     ],
-    Encoded = nbson:encode_all(Documents),
-    Documents = nbson:decode_all(Encoded).
+    Encoded = nbson:encode(Documents),
+    Documents = nbson:decode(Encoded).
 
 various() ->
     [{userdata, [{doc, "Tests various previously untested cases."}]}].
