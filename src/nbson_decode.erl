@@ -52,9 +52,9 @@ next(<<Bin/binary>>, Current, [db_pointer | Next]) ->
 next(<<Bin/binary>>, Current, [{db_pointer, Collection} | Next]) ->
     next(Bin, {pointer, Collection, Current}, Next);
 next(<<Bin/binary>>, Current, [jscode | Next]) ->
-    next(Bin, {javascript, [{}], Current}, Next);
+    next(Bin, {javascript, #{}, Current}, Next);
 next(<<Bin/binary>>, Current, [label | Next]) ->
-    next(Bin, Current, Next);
+    next(Bin, binary_to_atom(Current, utf8), Next);
 next(<<Bin/binary>>, Current, [jscodews | Next]) ->
     document(Bin, #{}, [{jscodews, Current} | Next]);
 next(<<Bin/binary>>, Current, [{jscodews, Code} | Next]) ->
@@ -82,7 +82,7 @@ evalue(<<?DOUBLE(D), Bin/binary>>, ?DOUBLE_TYPE, Next) ->
 evalue(<<?INT32(L), Bin/binary>>, ?STRING_TYPE, Next) ->
     string(Bin, L - 1, Next);
 evalue(<<Bin/binary>>, ?EMBDOC_TYPE, Next) ->
-    document(Bin, [], Next);
+    document(Bin, #{}, Next);
 evalue(<<?INT32(_L), Bin/binary>>, ?ARRAY_TYPE, Next) ->
     array(Bin, [], Next);
 evalue(<<?INT32(Size), ?INT8(SubType), Bin/binary>>, ?BIN_TYPE, Next) ->

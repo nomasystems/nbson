@@ -94,12 +94,12 @@ encode_value({regex, Pattern, Options}) ->
     >>};
 encode_value({pointer, Collection, <<_:96>> = Id}) ->
     {?DBPOINTER_TYPE, <<?INT32(byte_size(Collection) + 1), ?CSTRING(Collection), Id/binary>>};
-encode_value({javascript, [{}], Code}) when is_binary(Code) ->
+encode_value({javascript, Map, Code}) when is_map(Map), map_size(Map) == 0, is_binary(Code) ->
     {?JSCODE_TYPE, <<?INT32(byte_size(Code) + 1), ?CSTRING(Code)>>};
 encode_value(V) when is_atom(V), V =/= min_key, V =/= max_key ->
     VBin = atom_to_binary(V, utf8),
     {?SYMBOL_TYPE, <<?INT32(byte_size(VBin) + 1), ?CSTRING(VBin)>>};
-encode_value({javascript, Scope, Code}) when is_tuple(hd(Scope)), is_binary(Code) ->
+encode_value({javascript, Scope, Code}) when is_map(Scope), is_binary(Code) ->
     CStringCode = <<?CSTRING(Code)>>,
     Encoded = <<?INT32(byte_size(CStringCode)), CStringCode/binary, (encode(Scope))/binary>>,
     {?JSCODEWS_TYPE, <<?INT32(byte_size(Encoded) + 4), Encoded/binary>>};
