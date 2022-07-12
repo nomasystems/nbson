@@ -456,7 +456,6 @@ multi(_Config) ->
     {PartDocuments, _RestDecoding} = nbson:decode(Part),
     true = (length(PartDocuments) < length(Documents)),
     ok.
- 
 
 various() ->
     [{userdata, [{doc, "Tests various previously untested cases."}]}].

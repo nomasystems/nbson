@@ -25,10 +25,14 @@
 %%%-----------------------------------------------------------------------------
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
-encode(Document) when map_size(Document) == 0 ->
+encode(undefined) ->
+    <<>>;
+encode(Document) when is_map(Document), map_size(Document) == 0 ->
     ?EMPTY_DOC;
-encode(Document) ->
-    encode_map(Document).
+encode(Document) when is_map(Document) ->
+    encode_map(Document);
+encode(Data) when is_list(Data), is_map(hd(Data)) ->
+    <<<<<<(encode_map(Doc))/binary>> || Doc <- Data>>/binary>>.
 
 %%%-----------------------------------------------------------------------------
 %%% INTERNAL FUNCTIONS

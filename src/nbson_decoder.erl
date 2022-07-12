@@ -25,7 +25,22 @@
 %%%-----------------------------------------------------------------------------
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
-decode(Bson) ->
+decode(Bin) when is_binary(Bin) ->
+    decode(Bin, []).
+
+decode(<<?INT32(Size), _Rest/binary>> = Data, Acc) when byte_size(Data) >= Size ->
+    case do_decode(Data) of
+        {Doc, <<>>} when Acc == [] ->
+            Doc;
+        {Doc, <<>>} ->
+            lists:reverse([Doc | Acc]);
+        {Doc, Rest} ->
+            decode(Rest, [Doc | Acc])
+    end;
+decode(Data, Acc) ->
+    {lists:reverse(Acc), Data}.
+
+do_decode(Bson) ->
     document(Bson, #{}, [document]).
 
 %%%-----------------------------------------------------------------------------
