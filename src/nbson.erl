@@ -29,9 +29,9 @@
 encode(undefined) ->
     <<>>;
 encode(Data) when is_map(Data) ->
-    nbson_encode:encode(Data);
+    nbson_encoder:encode(Data);
 encode(Data) when is_list(Data), is_map(hd(Data)) ->
-    <<<<<<(nbson_encode:encode(Doc))/binary>> || Doc <- Data>>/binary>>.
+    <<<<<<(nbson_encoder:encode(Doc))/binary>> || Doc <- Data>>/binary>>.
 
 -spec decode(Data) -> Result when
     Data :: binary(),
@@ -40,7 +40,7 @@ decode(Data) ->
     decode_all(Data, []).
 
 decode_all(<<?INT32(Size), _Rest/binary>> = Data, Acc) when byte_size(Data) >= Size ->
-    case nbson_decode:decode(Data) of
+    case nbson_decoder:decode(Data) of
         {Doc, <<>>} when Acc == [] ->
             Doc;
         {Doc, <<>>} ->

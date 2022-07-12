@@ -62,15 +62,15 @@ bench_encode() ->
 
 
 profile_decode() ->
-    Path = "bench/test.json",
+    Path = "bench/test1.bson",
     {ok, Bin} = file:read_file(Path),
-    eflambe:apply({njson, decode, [Bin]}, [{output_format, brendan_gregg}]).
+    eflambe:apply({nbson, decode, [Bin]}, [{output_format, brendan_gregg}]).
 
 profile_encode() ->
-    Path = "bench/test.json",
+    Path = "bench/test1.bson",
     {ok, Bin} = file:read_file(Path),
-    {ok, J, _} = njson:decode(Bin),
-    eflambe:apply({njson, encode, [J]}, [{output_format, brendan_gregg}]).
+    B = nbson:decode(Bin),
+    eflambe:apply({nbson, encode, [B]}, [{output_format, brendan_gregg}]).
 
 
 

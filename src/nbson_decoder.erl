@@ -14,7 +14,7 @@
 %%% Based on jsone CPS style, see
 %% https://github.com/sile/jsone/blob/master/src/jsone_decode.erl
 
--module(nbson_decode).
+-module(nbson_decoder).
 
 %%% INCLUDE FILES
 -include("nbson_bson_types.hrl").
