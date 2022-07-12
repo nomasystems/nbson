@@ -32,8 +32,6 @@ encode(Document) when is_map(Document), map_size(Document) == 0 ->
 encode(Document) when is_map(Document) ->
     encode_map(Document).
 
-
-
 %%%-----------------------------------------------------------------------------
 %%% INTERNAL FUNCTIONS
 %%%-----------------------------------------------------------------------------
@@ -45,8 +43,7 @@ encode_list(Documents) ->
 
 list_fold_encode(Document, {Pos, Acc}) ->
     {Type, Payload} = encode_value(Document),
-    {Pos+1, <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Pos)), Payload/binary>>}.
-
+    {Pos + 1, <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Pos)), Payload/binary>>}.
 
 encode_map(Document) ->
     Encoded = maps:fold(fun map_fold_encode/3, <<>>, Document),
@@ -55,7 +52,6 @@ encode_map(Document) ->
 map_fold_encode(Label, Value, Acc) ->
     {Type, Payload} = encode_value(Value),
     <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Label)), Payload/binary>>.
-
 
 encode_value(V) when is_float(V) ->
     {?DOUBLE_TYPE, <<?DOUBLE(V)>>};
@@ -73,6 +69,10 @@ encode_value({data, uuid, Data}) when is_binary(Data) ->
     {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(3), Data/binary>>};
 encode_value({data, md5, Data}) when is_binary(Data) ->
     {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(5), Data/binary>>};
+encode_value({data, encrypted, Data}) when is_binary(Data) ->
+    {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(6), Data/binary>>};
+encode_value({data, compressed, Data}) when is_binary(Data) ->
+    {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(7), Data/binary>>};
 encode_value({data, user, Data}) when is_binary(Data) ->
     {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(128), Data/binary>>};
 encode_value(undefined) ->
@@ -115,7 +115,6 @@ encode_value(max_key) ->
     {?MAXKEY_TYPE, <<>>};
 encode_value(min_key) ->
     {?MINKEY_TYPE, <<>>}.
-
 
 encode_label(Label) when is_integer(Label) ->
     integer_to_binary(Label);

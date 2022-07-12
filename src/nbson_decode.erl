@@ -149,14 +149,16 @@ subtype_decode(0) ->
 subtype_decode(1) ->
     function;
 subtype_decode(2) ->
-    binary;
+    binary_old;
 subtype_decode(3) ->
-    uuid;
+    uuid_old;
 subtype_decode(4) ->
     uuid;
 subtype_decode(5) ->
     md5;
 subtype_decode(6) ->
     encrypted;
+subtype_decode(7) ->
+    compressed;
 subtype_decode(128) ->
     user.

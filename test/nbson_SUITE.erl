@@ -30,11 +30,14 @@ all() ->
         int64,
         js,
         js_ws,
+        max_key,
+        min_key,
         null,
         obj_id,
         regex,
         string,
         symbols,
+        timestamp,
         undef
     ].
 
@@ -72,32 +75,29 @@ end_per_testcase(Case, Conf) ->
 array() ->
     [{userdata, [{doc, "Tests array data type BSON decoder API."}]}].
 array(_Config) ->
-    BaseBin = <<46, 0, 0, 0, 4, 97, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0,
-                0, 2, 49, 0, 4, 0, 0, 0, 116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0,
-                116, 104, 114, 101, 101, 0, 0, 0>>,
+    BaseBin =
+        <<46, 0, 0, 0, 4, 97, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
+            116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
     BaseMap = #{<<"arr">> => [1, <<"two">>, <<"three">>]},
     {BaseMap, <<>>} = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
-
 bin() ->
     [{userdata, [{doc, "Tests bin data type BSON decoder API."}]}].
 bin(_Config) ->
-    BaseBin = <<23, 0, 0, 0, 5, 98, 105, 110, 0, 8, 0, 0, 0, 0, 131, 107, 0, 4,
-                110, 111, 109, 97, 0>>,
+    BaseBin =
+        <<23, 0, 0, 0, 5, 98, 105, 110, 0, 8, 0, 0, 0, 0, 131, 107, 0, 4, 110, 111, 109, 97, 0>>,
     BaseMap = #{<<"bin">> => {data, binary, <<131, 107, 0, 4, 110, 111, 109, 97>>}},
     {BaseMap, <<>>} = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
-
 boolean() ->
     [{userdata, [{doc, "Tests boolean data type BSON decoder API."}]}].
 boolean(_Config) ->
-    BaseBin = <<11, 0, 0, 0, 8, 102, 117, 110, 0, 1, 0>>,
-    BaseMap = #{<<"fun">> => true},
+    BaseBin = <<20, 0, 0, 0, 8, 102, 97, 108, 115, 101, 0, 0, 8, 116, 114, 117, 101, 0, 1, 0>>,
+    BaseMap = #{<<"true">> => true, <<"false">> => false},
     {BaseMap, <<>>} = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
-
 
 datetime() ->
     [{userdata, [{doc, "Tests datetime data type BSON decoder API."}]}].
@@ -110,13 +110,15 @@ datetime(_Config) ->
 db_pointer() ->
     [{userdata, [{doc, "Tests db_pointer data type BSON decoder API."}]}].
 db_pointer(_Config) ->
-    BaseBin = <<29, 0, 0, 0, 12, 112, 116, 114, 0, 3, 0, 0, 0, 110, 115, 0, 98, 80,
-                61, 22, 65, 21, 149, 194, 153, 178, 194, 34, 0>>,
-    BaseMap = #{<<"ptr">> =>
-                {pointer, <<"ns">>, <<98, 80, 61, 22, 65, 21, 149, 194, 153, 178, 194, 34>>}},
+    BaseBin =
+        <<29, 0, 0, 0, 12, 112, 116, 114, 0, 3, 0, 0, 0, 110, 115, 0, 98, 80, 61, 22, 65, 21, 149,
+            194, 153, 178, 194, 34, 0>>,
+    BaseMap = #{
+        <<"ptr">> =>
+            {pointer, <<"ns">>, <<98, 80, 61, 22, 65, 21, 149, 194, 153, 178, 194, 34>>}
+    },
     {BaseMap, <<>>} = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
-
 
 double() ->
     [{userdata, [{doc, "Tests double data type BSON decoder API."}]}].
@@ -126,52 +128,60 @@ double(_Config) ->
     {BaseMap, <<>>} = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
-
 embdoc() ->
     [{userdata, [{doc, "Tests embdoc data type BSON decoder API."}]}].
 embdoc(_Config) ->
-    BaseBin = <<28, 0, 0, 0, 3, 100, 111, 99, 0, 18, 0, 0, 0, 2, 111, 110, 101, 0,
-                4, 0, 0, 0, 111, 110, 101, 0, 0, 0>>,
+    BaseBin =
+        <<28, 0, 0, 0, 3, 100, 111, 99, 0, 18, 0, 0, 0, 2, 111, 110, 101, 0, 4, 0, 0, 0, 111, 110,
+            101, 0, 0, 0>>,
     BaseMap = #{<<"doc">> => #{<<"one">> => <<"one">>}},
     {BaseMap, <<>>} = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
-
 int64() ->
     [{userdata, [{doc, "Tests int64 data type BSON decoder API."}]}].
 int64(_Config) ->
-    BaseBin = <<20, 0, 0, 0, 18, 105, 110, 116, 54, 52, 0, 188, 104,
-                151, 147, 227, 13, 1, 23, 0>>,
+    BaseBin = <<20, 0, 0, 0, 18, 105, 110, 116, 54, 52, 0, 188, 104, 151, 147, 227, 13, 1, 23, 0>>,
     BaseMap = #{<<"int64">> => 1657621408933963964},
     {BaseMap, <<>>} = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
-
-
-
-
 js() ->
     [{userdata, [{doc, "Tests javascript data type BSON decoder API."}]}].
 js(_Config) ->
-    BaseBin = <<41, 0, 0, 0, 13, 99, 111, 100, 101, 0, 26, 0, 0, 0, 102, 117, 110,
-                99, 116, 105, 111, 110, 40, 120, 41, 32, 123, 32, 114, 101, 116,
-                117, 114, 110, 32, 120, 59, 32, 125, 0, 0>>,
+    BaseBin =
+        <<41, 0, 0, 0, 13, 99, 111, 100, 101, 0, 26, 0, 0, 0, 102, 117, 110, 99, 116, 105, 111, 110,
+            40, 120, 41, 32, 123, 32, 114, 101, 116, 117, 114, 110, 32, 120, 59, 32, 125, 0, 0>>,
     BaseMap = #{<<"code">> => {javascript, #{}, <<"function(x) { return x; }">>}},
     {BaseMap, <<>>} = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
-
 js_ws() ->
     [{userdata, [{doc, "Tests javascriptWithScope data type BSON decoder API."}]}].
 js_ws(_Config) ->
-    BaseBin = <<61, 0, 0, 0, 15, 106, 115, 119, 115, 0, 50, 0, 0, 0, 30, 0, 0, 0,
-                102, 117, 110, 99, 116, 105, 111, 110, 32, 40, 120, 41, 123, 32,
-                114, 101, 116, 117, 114, 110, 32, 120, 32, 42, 32, 120, 59, 32,
-                125, 0, 12, 0, 0, 0, 16, 120, 0, 1, 0, 0, 0, 0, 0>>,
-    BaseMap = #{<<"jsws">>  => {javascript, #{<<"x">> => 1}, <<"function (x){ return x * x; }">>}},
+    BaseBin =
+        <<61, 0, 0, 0, 15, 106, 115, 119, 115, 0, 50, 0, 0, 0, 30, 0, 0, 0, 102, 117, 110, 99, 116,
+            105, 111, 110, 32, 40, 120, 41, 123, 32, 114, 101, 116, 117, 114, 110, 32, 120, 32, 42,
+            32, 120, 59, 32, 125, 0, 12, 0, 0, 0, 16, 120, 0, 1, 0, 0, 0, 0, 0>>,
+    BaseMap = #{<<"jsws">> => {javascript, #{<<"x">> => 1}, <<"function (x){ return x * x; }">>}},
     {BaseMap, <<>>} = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
+max_key() ->
+    [{userdata, [{doc, "Tests maxkey data type BSON decoder API."}]}].
+max_key(_Config) ->
+    BaseBin = <<14, 0, 0, 0, 127, 109, 97, 120, 95, 107, 101, 121, 0, 0>>,
+    BaseMap = #{<<"max_key">> => max_key},
+    {BaseMap, <<>>} = nbson:decode(BaseBin),
+    BaseBin = nbson:encode(BaseMap).
+
+min_key() ->
+    [{userdata, [{doc, "Tests maxkey data type BSON decoder API."}]}].
+min_key(_Config) ->
+    BaseBin = <<14, 0, 0, 0, 255, 109, 105, 110, 95, 107, 101, 121, 0, 0>>,
+    BaseMap = #{<<"min_key">> => min_key},
+    {BaseMap, <<>>} = nbson:decode(BaseBin),
+    BaseBin = nbson:encode(BaseMap).
 
 null() ->
     [{userdata, [{doc, "Tests null data type BSON decoder API."}]}].
@@ -181,7 +191,6 @@ null(_Config) ->
     {BaseMap, <<>>} = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
-
 obj_id() ->
     [{userdata, [{doc, "Tests obj_id data type BSON decoder API."}]}].
 obj_id(_Config) ->
@@ -190,16 +199,15 @@ obj_id(_Config) ->
     {BaseMap, <<>>} = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
-
 regex() ->
     [{userdata, [{doc, "Tests regex data type BSON decoder API."}]}].
 regex(_Config) ->
-    BaseBin = <<29, 0, 0, 0, 11, 110, 97, 109, 101, 0, 47, 94, 110, 111, 109, 97, 45,
-                91, 48, 45, 57, 93, 46, 42, 47, 0, 105, 0, 0>>,
+    BaseBin =
+        <<29, 0, 0, 0, 11, 110, 97, 109, 101, 0, 47, 94, 110, 111, 109, 97, 45, 91, 48, 45, 57, 93,
+            46, 42, 47, 0, 105, 0, 0>>,
     BaseMap = #{<<"name">> => {regex, <<"/^noma-[0-9].*/">>, <<"i">>}},
     {BaseMap, <<>>} = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
-
 
 string() ->
     [{userdata, [{doc, "Tests string data type BSON decoder API."}]}].
@@ -209,7 +217,6 @@ string(_Config) ->
     {BaseMap, <<>>} = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
-
 symbols() ->
     [{userdata, [{doc, "Tests symbol data type BSON decoder API."}]}].
 symbols(_Config) ->
@@ -218,7 +225,15 @@ symbols(_Config) ->
     {BaseMap, <<>>} = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
-
+timestamp() ->
+    [{userdata, [{doc, "Tests timestamp data type BSON decoder API."}]}].
+timestamp(_Config) ->
+    BaseBin =
+        <<24, 0, 0, 0, 17, 116, 105, 109, 101, 115, 116, 97, 109, 112, 0, 193, 80, 205, 98, 1, 0, 0,
+            0, 0>>,
+    BaseMap = #{<<"timestamp">> => {timestamp, 1657622721, 1}},
+    {BaseMap, <<>>} = nbson:decode(BaseBin),
+    BaseBin = nbson:encode(BaseMap).
 
 undef() ->
     [{userdata, [{doc, "Tests undef data type BSON decoder API."}]}].
