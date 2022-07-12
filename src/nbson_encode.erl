@@ -25,11 +25,9 @@
 %%%-----------------------------------------------------------------------------
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
-encode(undefined) ->
-    <<>>;
-encode(Document) when is_map(Document), map_size(Document) == 0 ->
+encode(Document) when map_size(Document) == 0 ->
     ?EMPTY_DOC;
-encode(Document) when is_map(Document) ->
+encode(Document) ->
     encode_map(Document).
 
 %%%-----------------------------------------------------------------------------

@@ -44,6 +44,8 @@ all() ->
         symbols,
         timestamp,
         undef,
+        %%%
+        multi,
         various
     ].
 
@@ -319,6 +321,136 @@ undef(_Config) ->
     BaseMap = #{<<"a">> => undefined},
     BaseMap = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
+
+multi() ->
+    [{userdata, [{doc, "Tests multi document decode untested cases."}]}].
+multi(_Config) ->
+    Documents = [
+        #{<<"null-dJw=">> => null, <<"symbol-PxjQaA==">> => symbol},
+        #{
+            <<"32bit_int-xuYNvg==">> => 1033835296,
+            <<"decimal-kGE2">> => 27498990.829082392,
+            <<"double-UJY=">> => 73439946.16454887,
+            <<"javascript_ws-H3ROBw==">> =>
+                {javascript, #{<<"x">> => 1}, <<"function (x){ return x * x; }">>},
+            <<"object-kg==">> => #{<<"null-D3fO">> => null},
+            <<"string-ng==">> => <<"VTIHDIzjMbnmLD4TaQA=">>
+        },
+        #{
+            <<"64bit_int-Rg==">> => 3118048609991648864,
+            <<"binary_data-31/sJw==">> =>
+                {data, function,
+                    <<7, 167, 169, 118, 95, 235, 216, 96, 223, 33, 107, 193, 139, 245, 54, 151, 253,
+                        56, 155>>},
+            <<"boolean-9PRJ">> => false,
+            <<"boolean-O0kM">> => false,
+            <<"javascript_ws-EjM=">> =>
+                {javascript, #{<<"x">> => 1}, <<"function (x){ return x * x; }">>},
+            <<"object-YA==">> =>
+                #{
+                    <<"regular_expression-+MA=">> =>
+                        {regex, <<"rO+3hT7K7deGdhPvvA==">>, <<"imxs">>},
+                    <<"regular_expression-bg==">> =>
+                        {regex, <<"ig==">>, <<"imxs">>}
+                },
+            <<"object_id-dw==">> => {object_id, <<"30a06cdc41cf">>},
+            <<"timestamp-iKfl">> => {timestamp, 83558059, 1109549932},
+            <<"undefined-huu8">> => undefined
+        },
+        #{
+            <<"max_key-mao=">> => maxkey,
+            <<"object-BFpFIQ==">> =>
+                #{
+                    <<"javascript_ws-PQ==">> =>
+                        {javascript, #{<<"x">> => 1}, <<"function (x){ return x * x; }">>},
+                    <<"null-4jsy">> => null,
+                    <<"timestamp-zBD6pQ==">> =>
+                        {timestamp, 1066598711, 883453773}
+                }
+        },
+        #{
+            <<"64bit_int-7T4=">> => 3884503075345403561,
+            <<"decimal-KXra">> => 75208402.43127207,
+            <<"null-k9z1">> => null
+        },
+        #{
+            <<"64bit_int-7+2xKA==">> => 3975528678009248538,
+            <<"array-MBBJew==">> =>
+                [
+                    undefined,
+                    {regex, <<"5OY=">>, <<"imxs">>},
+                    {regex, <<"aud4xw==">>, <<"imxs">>}
+                ],
+            <<"double-cTqw">> => 67670705.68960184,
+            <<"double-fA==">> => 70570920.67318127,
+            <<"javascript-Gg==">> =>
+                {javascript, #{}, <<"function(x) { return x; }">>},
+            <<"object_id-vLTmpg==">> => {object_id, <<"64dd91456543">>},
+            <<"regular_expression-kwkC">> =>
+                {regex, <<"QareKbATkD8=">>, <<"imxs">>},
+            <<"string-Pg==">> => <<"81QO">>,
+            <<"timestamp-82r4">> => {timestamp, 1442557192, 431496962}
+        },
+        #{
+            <<"array-nxmm">> =>
+                [null, undefined, 43442543.6892035, <<"cGp+kW0cscjqPw==">>],
+            <<"binary_data-IpY=">> =>
+                {data, function, <<132, 181, 215, 203, 197, 149, 154>>},
+            <<"binary_data-ZPVL">> =>
+                {data, function, <<153, 16, 58, 72, 236, 114, 72, 244, 196, 38>>},
+            <<"boolean-psqS">> => true,
+            <<"javascript_ws-a4k=">> =>
+                {javascript, #{<<"x">> => 1}, <<"function (x){ return x * x; }">>},
+            <<"min_key-MWc=">> => minkey
+        },
+        #{
+            <<"64bit_int-FQ==">> => 3829028848330592335,
+            <<"javascript-Z+o=">> =>
+                {javascript, #{}, <<"function(x) { return x; }">>}
+        },
+        #{
+            <<"32bit_int-0R8=">> => 1956291090,
+            <<"boolean-DQ==">> => false,
+            <<"date-yQ==">> => {473270961, 264049, 957000},
+            <<"javascript-haaIdg==">> =>
+                {javascript, #{}, <<"function(x) { return x; }">>},
+            <<"javascript_ws-/DyP">> =>
+                {javascript, #{<<"x">> => 1}, <<"function (x){ return x * x; }">>},
+            <<"min_key-p4kW">> => minkey,
+            <<"object-wQ==">> =>
+                #{
+                    <<"object-yHdI">> =>
+                        #{
+                            <<"array-q3+o">> => [973957529],
+                            <<"javascript-e3RW">> =>
+                                {javascript, #{}, <<"function(x) { return x; }">>},
+                            <<"min_key-bltN">> => minkey
+                        },
+                    <<"timestamp-x5E=">> => {timestamp, 336694066, 1682812733}
+                },
+            <<"regular_expression-cec=">> =>
+                {regex, <<"hpM67Mxw">>, <<"imxs">>},
+            <<"string-kuU=">> => <<"rvauc7tDKg==">>
+        },
+        #{
+            <<"32bit_int-LPU5">> => 453616695,
+            <<"64bit_int-RZQM2A==">> => 5526198722842772363,
+            <<"boolean-Pj8ZhA==">> => false,
+            <<"javascript-E1PO">> =>
+                {javascript, #{}, <<"function(x) { return x; }">>},
+            <<"javascript_ws-udsE0A==">> =>
+                {javascript, #{<<"x">> => 1}, <<"function (x){ return x * x; }">>},
+            <<"min_key-5OqQ">> => minkey,
+            <<"object-nw==">> =>
+                #{
+                    <<"object-EeLF">> =>
+                        #{<<"undefined-BStQeQ==">> => undefined}
+                },
+            <<"undefined-2g==">> => undefined
+        }
+    ],
+    Encoded = nbson:encode_all(Documents),
+    Documents = nbson:decode_all(Encoded).
 
 various() ->
     [{userdata, [{doc, "Tests various previously untested cases."}]}].
