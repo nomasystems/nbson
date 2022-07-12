@@ -36,20 +36,18 @@ bench_dir(Path) ->
     lists:foreach(fun(X) -> bench_encode(X) end, Paths).
 
 bench_decode(Path) ->
-    {ok, _Fd0} = file:open(Path, [read, raw]),
     {ok, Bin} = file:read_file(Path),
     DocCount = doc_count(Path),
     measure_decode(Bin, DocCount).
 
 bench_encode(Path) ->
-    {ok, _Fd0} = file:open(Path, [read, raw]),
     {ok, Bin} = file:read_file(Path),
     DocCount = doc_count(Path),
     measure_encode(Bin, DocCount).
     
 measure_decode(Bin, DocCount) ->
     Size = erlang:integer_to_list(erlang:byte_size(Bin)),
-    NbsonTimeDecode = erlperf:time(fun() -> nbson:decode(Bin) end, 10),
+    NbsonTimeDecode = erlperf:time(fun() -> nbson:decode_all(Bin) end, 10),
     BsonErlangTimeDecode = erlperf:time(fun() -> get_docs(Bin, []) end, 10),
     io:format("~20.. s  ~20.. s  ~20.. B  ~20.. B~n", [DocCount, Size, NbsonTimeDecode, BsonErlangTimeDecode]).
 
