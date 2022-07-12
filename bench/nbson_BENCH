@@ -15,6 +15,8 @@ extra_deps() ->
     ['nbson', 'bson-erlang'].
 
 main(_) ->
+    CompilerOpts = compile:env_compiler_options(),
+    io:format("Compiler options: ~p~n", [CompilerOpts]),
     setup(),
     bench().
 
@@ -47,24 +49,26 @@ bench_encode(Path) ->
     
 measure_decode(Bin, DocCount) ->
     Size = erlang:integer_to_list(erlang:byte_size(Bin)),
-    NbsonTimeDecode = erlperf:time(fun() -> nbson:decode_all(Bin) end, 10),
+    NbsonTimeDecode = erlperf:time(fun() -> nbson:decode(Bin) end, 10),
     BsonErlangTimeDecode = erlperf:time(fun() -> get_docs(Bin, []) end, 10),
     io:format("~20.. s  ~20.. s  ~20.. B  ~20.. B~n", [DocCount, Size, NbsonTimeDecode, BsonErlangTimeDecode]).
 
 measure_encode(Bin, DocCount) ->
     Size = erlang:integer_to_list(erlang:byte_size(Bin)),
-    {NbsonDocs, _Rest1} = nbson:decode(Bin),
+    NbsonDocs = case nbson:decode(Bin) of
+                    Map when is_map(Map) ->
+                        Map;
+                    List when is_list(List) ->
+                        List;
+                    {List, _Rest} ->
+                        List
+                end,
     {BsonErlangDocs, _Rest2} = get_docs(Bin, []),
 
-    NbsonTimeEncode = erlperf:time(fun() -> nbson_encode(NbsonDocs) end, 10),
+    NbsonTimeEncode = erlperf:time(fun() -> nbson:encode(NbsonDocs) end, 10),
     BsonErlangTimeEncode = erlperf:time(fun() -> put_docs(BsonErlangDocs) end, 10),
     io:format("~20.. s  ~20.. s  ~20.. B  ~20.. B~n", [DocCount, Size, NbsonTimeEncode, BsonErlangTimeEncode]).
 
-
-nbson_encode([[{_K,_V} | _T] = Doc]) ->
-    nbson:encode(Doc);
-nbson_encode(List) ->
-    lists:foreach(fun(Doc) -> nbson:encode(Doc) end, List).
 
 % get_docs implementation extracted from https://github.com/comtihon/mongodb-erlang/blob/56c700f791601a201a9d5af7cad45b3c81258209/src/connection/mongo_protocol.erl#L113
 get_docs(<<>>, Docs) -> {lists:reverse(Docs), <<>>};
