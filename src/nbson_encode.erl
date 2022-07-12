@@ -66,7 +66,7 @@ encode_value({data, binary, Data}) when is_binary(Data) ->
 encode_value({data, function, Data}) when is_binary(Data) ->
     {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(1), Data/binary>>};
 encode_value({data, uuid, Data}) when is_binary(Data) ->
-    {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(3), Data/binary>>};
+    {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(4), Data/binary>>};
 encode_value({data, md5, Data}) when is_binary(Data) ->
     {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(5), Data/binary>>};
 encode_value({data, encrypted, Data}) when is_binary(Data) ->

@@ -21,8 +21,13 @@
 all() ->
     [
         array,
-        bin,
         boolean,
+        data_bin,
+        data_compressed,
+        data_encrypted,
+        data_fun,
+        data_md5,
+        data_uuid,
         datetime,
         db_pointer,
         double,
@@ -38,7 +43,8 @@ all() ->
         string,
         symbols,
         timestamp,
-        undef
+        undef,
+        various
     ].
 
 %%%-----------------------------------------------------------------------------
@@ -82,20 +88,91 @@ array(_Config) ->
     {BaseMap, <<>>} = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
-bin() ->
-    [{userdata, [{doc, "Tests bin data type BSON decoder API."}]}].
-bin(_Config) ->
+boolean() ->
+    [{userdata, [{doc, "Tests boolean data type BSON decoder API."}]}].
+boolean(_Config) ->
+    BaseBin = <<20, 0, 0, 0, 8, 102, 97, 108, 115, 101, 0, 0, 8, 116, 114, 117, 101, 0, 1, 0>>,
+    BaseMap = #{<<"true">> => true, <<"false">> => false},
+    {BaseMap, <<>>} = nbson:decode(BaseBin),
+    BaseBin = nbson:encode(BaseMap).
+
+data_bin() ->
+    [{userdata, [{doc, "Tests data bin data type BSON decoder API."}]}].
+data_bin(_Config) ->
     BaseBin =
         <<23, 0, 0, 0, 5, 98, 105, 110, 0, 8, 0, 0, 0, 0, 131, 107, 0, 4, 110, 111, 109, 97, 0>>,
     BaseMap = #{<<"bin">> => {data, binary, <<131, 107, 0, 4, 110, 111, 109, 97>>}},
     {BaseMap, <<>>} = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
-boolean() ->
-    [{userdata, [{doc, "Tests boolean data type BSON decoder API."}]}].
-boolean(_Config) ->
-    BaseBin = <<20, 0, 0, 0, 8, 102, 97, 108, 115, 101, 0, 0, 8, 116, 114, 117, 101, 0, 1, 0>>,
-    BaseMap = #{<<"true">> => true, <<"false">> => false},
+data_compressed() ->
+    [{userdata, [{doc, "Tests data compressed data type BSON decoder API."}]}].
+data_compressed(_Config) ->
+    Base = <<"this is a text">>,
+    GZip = zlib:gzip(Base),
+
+    BaseBin =
+        <<54, 0, 0, 0, 5, 99, 111, 109, 112, 114, 101, 115, 115, 101, 100, 0, 32, 0, 0, 0, 7, 31,
+            139, 8, 0, 0, 0, 0, 0, 0, 3, 43, 201, 200, 44, 86, 0, 162, 68, 133, 146, 212, 138, 18,
+            0, 33, 62, 234, 238, 14, 0, 0, 0, 0>>,
+    BaseMap = #{<<"compressed">> => {data, compressed, GZip}},
+    {BaseMap, <<>>} = nbson:decode(BaseBin),
+    BaseBin = nbson:encode(BaseMap).
+
+data_encrypted() ->
+    [{userdata, [{doc, "Tests data encrypted data type BSON decoder API."}]}].
+data_encrypted(_Config) ->
+    Key = <<1:256>>,
+    IV = <<0:128>>,
+    Text = <<"this is a text">>,
+    AAD = <<>>,
+    {CipherText, Tag} = crypto:crypto_one_time_aead(aes_256_gcm, Key, IV, Text, AAD, true),
+
+    BaseBin =
+        <<35, 0, 0, 0, 5, 101, 110, 99, 114, 121, 112, 116, 101, 100, 0, 14, 0, 0, 0, 6, 194, 179,
+            26, 216, 90, 53, 38, 51, 98, 78, 27, 228, 65, 164, 0>>,
+    BaseMap = #{<<"encrypted">> => {data, encrypted, CipherText}},
+    {BaseMap, <<>>} = nbson:decode(BaseBin),
+    BaseBin = nbson:encode(BaseMap),
+    Text = crypto:crypto_one_time_aead(aes_256_gcm, Key, IV, CipherText, AAD, Tag, false).
+
+data_fun() ->
+    [{userdata, [{doc, "Tests data fun data type BSON decoder API."}]}].
+data_fun(_Config) ->
+    BaseBin =
+        <<66, 0, 0, 0, 5, 102, 117, 110, 0, 51, 0, 0, 0, 1, 102, 117, 110, 99, 116, 105, 111, 110,
+            32, 115, 113, 117, 97, 114, 101, 40, 110, 117, 109, 98, 101, 114, 41, 32, 123, 32, 114,
+            101, 116, 117, 114, 110, 32, 110, 117, 109, 98, 101, 114, 32, 42, 32, 110, 117, 109, 98,
+            101, 114, 59, 32, 125, 0>>,
+    BaseMap = #{
+        <<"fun">> =>
+            {data, function, <<"function square(number) { return number * number; }">>}
+    },
+
+    {BaseMap, <<>>} = nbson:decode(BaseBin),
+    BaseBin = nbson:encode(BaseMap).
+
+data_md5() ->
+    [{userdata, [{doc, "Tests data md5 data type BSON decoder API."}]}].
+data_md5(_Config) ->
+    Base = <<"this is a text">>,
+    MD5 = crypto:hash(md5, Base),
+
+    BaseBin =
+        <<31, 0, 0, 0, 5, 109, 100, 53, 0, 16, 0, 0, 0, 5, 120, 130, 26, 5, 210, 130, 130, 46, 74,
+            190, 193, 144, 192, 97, 186, 120, 0>>,
+    BaseMap = #{<<"md5">> => {data, md5, MD5}},
+    {BaseMap, <<>>} = nbson:decode(BaseBin),
+    BaseBin = nbson:encode(BaseMap).
+
+data_uuid() ->
+    [{userdata, [{doc, "Tests data uuid data type BSON decoder API."}]}].
+data_uuid(_Config) ->
+    BaseBin =
+        <<52, 0, 0, 0, 5, 117, 117, 105, 100, 0, 36, 0, 0, 0, 4, 49, 50, 51, 101, 52, 53, 54, 55,
+            45, 101, 56, 57, 98, 45, 49, 50, 100, 51, 45, 97, 52, 53, 54, 45, 52, 50, 54, 54, 49,
+            52, 49, 55, 52, 48, 48, 48, 0>>,
+    BaseMap = #{<<"uuid">> => {data, uuid, <<"123e4567-e89b-12d3-a456-426614174000">>}},
     {BaseMap, <<>>} = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
@@ -242,3 +319,9 @@ undef(_Config) ->
     BaseMap = #{<<"a">> => undefined},
     {BaseMap, <<>>} = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
+
+various() ->
+    [{userdata, [{doc, "Tests various previously untested cases."}]}].
+various(_Config) ->
+    <<>> = nbson:encode(undefined),
+    <<5, 0, 0, 0, 0>> = nbson:encode(#{}).
