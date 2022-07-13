@@ -11,7 +11,7 @@
 %% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
--module(nbson_encode).
+-module(nbson_encoder).
 
 %%% INCLUDE FILES
 -include("nbson_bson_types.hrl").
@@ -19,44 +19,62 @@
 %%% EXTERNAL EXPORTS
 -export([encode/1]).
 
+%%% MACROS
+-define(EMPTY_DOC, <<?INT32(5), ?NULL>>).
+
 %%%-----------------------------------------------------------------------------
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
 encode(undefined) ->
     <<>>;
-encode([{}]) ->
-    <<?INT32(5), ?NULL>>;
-encode(Document) when is_tuple(hd(Document)) ->
-    Encoded = encode(Document, <<>>),
-    <<?INT32(byte_size(Encoded) + 5), Encoded/binary, ?NULL>>.
+encode(Document) when is_map(Document), map_size(Document) == 0 ->
+    ?EMPTY_DOC;
+encode(Document) when is_map(Document) ->
+    encode_map(Document);
+encode(Data) when is_list(Data), is_map(hd(Data)) ->
+    <<<<<<(encode_map(Doc))/binary>> || Doc <- Data>>/binary>>.
 
 %%%-----------------------------------------------------------------------------
 %%% INTERNAL FUNCTIONS
 %%%-----------------------------------------------------------------------------
-encode([], Acc) ->
-    Acc;
-encode([{Label, Value} | Rest], Acc) ->
+encode_list([]) ->
+    ?EMPTY_DOC;
+encode_list(Documents) ->
+    {_, Encoded} = lists:foldl(fun list_fold_encode/2, {0, <<>>}, Documents),
+    <<?INT32(byte_size(Encoded) + 5), Encoded/binary, ?NULL>>.
+
+list_fold_encode(Document, {Pos, Acc}) ->
+    {Type, Payload} = encode_value(Document),
+    {Pos + 1, <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Pos)), Payload/binary>>}.
+
+encode_map(Document) ->
+    Encoded = maps:fold(fun map_fold_encode/3, <<>>, Document),
+    <<?INT32(byte_size(Encoded) + 5), Encoded/binary, ?NULL>>.
+
+map_fold_encode(Label, Value, Acc) ->
     {Type, Payload} = encode_value(Value),
-    encode(Rest, <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Label)), Payload/binary>>).
+    <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Label)), Payload/binary>>.
 
 encode_value(V) when is_float(V) ->
     {?DOUBLE_TYPE, <<?DOUBLE(V)>>};
 encode_value(V) when is_binary(V) ->
     {?STRING_TYPE, <<?INT32(byte_size(V) + 1), ?CSTRING(V)>>};
-encode_value(V) when is_tuple(hd(V)), is_binary(element(1, (hd(V)))) ->
+encode_value(V) when is_map(V) ->
     {?EMBDOC_TYPE, encode(V)};
-encode_value([]) ->
-    {?ARRAY_TYPE, encode([{}])};
 encode_value(V) when is_list(V) ->
-    {?ARRAY_TYPE, encode(lists:zip(lists:seq(0, length(V) - 1), V))};
+    {?ARRAY_TYPE, encode_list(V)};
 encode_value({data, binary, Data}) when is_binary(Data) ->
     {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(0), Data/binary>>};
 encode_value({data, function, Data}) when is_binary(Data) ->
     {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(1), Data/binary>>};
 encode_value({data, uuid, Data}) when is_binary(Data) ->
-    {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(3), Data/binary>>};
+    {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(4), Data/binary>>};
 encode_value({data, md5, Data}) when is_binary(Data) ->
     {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(5), Data/binary>>};
+encode_value({data, encrypted, Data}) when is_binary(Data) ->
+    {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(6), Data/binary>>};
+encode_value({data, compressed, Data}) when is_binary(Data) ->
+    {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(7), Data/binary>>};
 encode_value({data, user, Data}) when is_binary(Data) ->
     {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(128), Data/binary>>};
 encode_value(undefined) ->
@@ -78,12 +96,12 @@ encode_value({regex, Pattern, Options}) ->
     >>};
 encode_value({pointer, Collection, <<_:96>> = Id}) ->
     {?DBPOINTER_TYPE, <<?INT32(byte_size(Collection) + 1), ?CSTRING(Collection), Id/binary>>};
-encode_value({javascript, [{}], Code}) when is_binary(Code) ->
+encode_value({javascript, Map, Code}) when is_map(Map), map_size(Map) == 0, is_binary(Code) ->
     {?JSCODE_TYPE, <<?INT32(byte_size(Code) + 1), ?CSTRING(Code)>>};
 encode_value(V) when is_atom(V), V =/= min_key, V =/= max_key ->
     VBin = atom_to_binary(V, utf8),
     {?SYMBOL_TYPE, <<?INT32(byte_size(VBin) + 1), ?CSTRING(VBin)>>};
-encode_value({javascript, Scope, Code}) when is_tuple(hd(Scope)), is_binary(Code) ->
+encode_value({javascript, Scope, Code}) when is_map(Scope), is_binary(Code) ->
     CStringCode = <<?CSTRING(Code)>>,
     Encoded = <<?INT32(byte_size(CStringCode)), CStringCode/binary, (encode(Scope))/binary>>,
     {?JSCODEWS_TYPE, <<?INT32(byte_size(Encoded) + 4), Encoded/binary>>};
@@ -101,8 +119,6 @@ encode_value(min_key) ->
     {?MINKEY_TYPE, <<>>}.
 
 encode_label(Label) when is_integer(Label) ->
-    list_to_binary(integer_to_list(Label));
-encode_label(Label) when is_atom(Label) ->
-    erlang:atom_to_binary(Label, utf8);
+    integer_to_binary(Label);
 encode_label(Label) when is_binary(Label) ->
     Label.

@@ -14,7 +14,7 @@
 %%% Based on jsone CPS style, see
 %% https://github.com/sile/jsone/blob/master/src/jsone_decode.erl
 
--module(nbson_decode).
+-module(nbson_decoder).
 
 %%% INCLUDE FILES
 -include("nbson_bson_types.hrl").
@@ -25,26 +25,37 @@
 %%%-----------------------------------------------------------------------------
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
-decode(Bson) ->
-    document(Bson, [], [{document, []}]).
+decode(Bin) when is_binary(Bin) ->
+    decode(Bin, []).
+
+decode(<<?INT32(Size), _Rest/binary>> = Data, Acc) when byte_size(Data) >= Size ->
+    case do_decode(Data) of
+        {Doc, <<>>} ->
+            lists:reverse([Doc | Acc]);
+        {Doc, Rest} ->
+            decode(Rest, [Doc | Acc])
+    end;
+decode(Data, _Acc) ->
+    erlang:throw({error, {invalid_bson, Data}}).
+
+do_decode(Bson) ->
+    document(Bson, #{}, [document]).
 
 %%%-----------------------------------------------------------------------------
 %%% INTERNAL FUNCTIONS
 %%%-----------------------------------------------------------------------------
 next(<<Bin/binary>>, Current, []) ->
-    {[Current], Bin};
-next(<<>>, Current, [{document, Docs}]) ->
-    {lists:reverse([Current | Docs]), <<>>};
-next(<<Bin/binary>>, Current, [{document, Docs}]) ->
-    document(Bin, [], [{document, [Current | Docs]}]);
-next(<<Bin/binary>>, Current, [{evalue, Type, document, Members} | Next]) ->
-    evalue(Bin, Type, [{elist, Current, Members} | Next]);
-next(<<Bin/binary>>, _Current, [{evalue, Type, array, Members} | Next]) ->
-    evalue(Bin, Type, [{array, Members} | Next]);
-next(<<Bin/binary>>, Current, [{elist, Name, Members} | Next]) ->
-    elist(Bin, document, [{Name, Current} | Members], Next);
-next(<<Bin/binary>>, Current, [{array, Members} | Next]) ->
-    elist(Bin, array, [Current | Members], Next);
+    {Current, Bin};
+next(<<Bin/binary>>, Current, [document]) ->
+    {Current, Bin};
+next(<<Bin/binary>>, Current, [{evalue, Type, document, Elements} | Next]) ->
+    evalue(Bin, Type, [{elist, Current, Elements} | Next]);
+next(<<Bin/binary>>, _Current, [{evalue, Type, array, Elements} | Next]) ->
+    evalue(Bin, Type, [{array, Elements} | Next]);
+next(<<Bin/binary>>, Current, [{elist, Name, Elements} | Next]) ->
+    elist(Bin, document, maps:put(Name, Current, Elements), Next);
+next(<<Bin/binary>>, Current, [{array, Elements} | Next]) ->
+    elist(Bin, array, [Current | Elements], Next);
 next(<<Bin/binary>>, Current, [regex | Next]) ->
     cstring(Bin, [{regex_opts, Current} | Next]);
 next(<<Bin/binary>>, Current, [{regex_opts, Regex} | Next]) ->
@@ -54,35 +65,37 @@ next(<<Bin/binary>>, Current, [db_pointer | Next]) ->
 next(<<Bin/binary>>, Current, [{db_pointer, Collection} | Next]) ->
     next(Bin, {pointer, Collection, Current}, Next);
 next(<<Bin/binary>>, Current, [jscode | Next]) ->
-    next(Bin, {javascript, [{}], Current}, Next);
+    next(Bin, {javascript, #{}, Current}, Next);
 next(<<Bin/binary>>, Current, [label | Next]) ->
-    next(Bin, Current, Next);
+    next(Bin, binary_to_atom(Current, utf8), Next);
 next(<<Bin/binary>>, Current, [jscodews | Next]) ->
-    document(Bin, [], [{jscodews, Current} | Next]);
+    document(Bin, #{}, [{jscodews, Current} | Next]);
 next(<<Bin/binary>>, Current, [{jscodews, Code} | Next]) ->
     next(Bin, {javascript, Current, Code}, Next);
 next(<<Bin/binary>>, Current, Next) ->
     {error, next, Bin, Current, Next}.
 
-document(<<?INT32(_Size), Bin/binary>>, Members, Next) ->
-    elist(Bin, document, Members, Next).
+document(<<?INT32(_Size), Bin/binary>>, Elements, Next) ->
+    elist(Bin, document, Elements, Next).
 
-elist(<<0, Bin/binary>>, document, [], Next) ->
-    next(Bin, [{}], Next);
-elist(<<0, Bin/binary>>, _Kind, Members, Next) ->
-    next(Bin, lists:reverse(Members), Next);
-elist(<<Bin/binary>>, Kind, Members, Next) ->
-    elem(Bin, Kind, Members, Next).
+elist(<<0, Bin/binary>>, document, Map, Next) when is_map(Map), map_size(Map) == 0 ->
+    next(Bin, #{}, Next);
+elist(<<0, Bin/binary>>, array, Elements, Next) ->
+    next(Bin, lists:reverse(Elements), Next);
+elist(<<0, Bin/binary>>, document, Elements, Next) ->
+    next(Bin, Elements, Next);
+elist(<<Bin/binary>>, Kind, Elements, Next) ->
+    elem(Bin, Kind, Elements, Next).
 
-elem(<<?INT8(Type), Bin/binary>>, Kind, Members, Next) ->
-    cstring(Bin, [{evalue, Type, Kind, Members} | Next]).
+elem(<<?INT8(Type), Bin/binary>>, Kind, Elements, Next) ->
+    cstring(Bin, [{evalue, Type, Kind, Elements} | Next]).
 
 evalue(<<?DOUBLE(D), Bin/binary>>, ?DOUBLE_TYPE, Next) ->
     next(Bin, D, Next);
 evalue(<<?INT32(L), Bin/binary>>, ?STRING_TYPE, Next) ->
     string(Bin, L - 1, Next);
 evalue(<<Bin/binary>>, ?EMBDOC_TYPE, Next) ->
-    document(Bin, [], Next);
+    document(Bin, #{}, Next);
 evalue(<<?INT32(_L), Bin/binary>>, ?ARRAY_TYPE, Next) ->
     array(Bin, [], Next);
 evalue(<<?INT32(Size), ?INT8(SubType), Bin/binary>>, ?BIN_TYPE, Next) ->
@@ -119,10 +132,10 @@ evalue(<<Bin/binary>>, ?MAXKEY_TYPE, Next) ->
 evalue(<<Bin/binary>>, ?MINKEY_TYPE, Next) ->
     next(Bin, min_key, Next).
 
-array(<<0, Bin/binary>>, Members, Next) ->
-    next(Bin, Members, Next);
-array(<<Bin/binary>>, Members, Next) ->
-    elem(Bin, array, Members, Next).
+array(<<0, Bin/binary>>, Elements, Next) ->
+    next(Bin, Elements, Next);
+array(<<Bin/binary>>, Elements, Next) ->
+    elem(Bin, array, Elements, Next).
 
 pointer(<<?BITS96(Id), Bin/binary>>, Next) ->
     next(Bin, Id, Next).
@@ -149,14 +162,16 @@ subtype_decode(0) ->
 subtype_decode(1) ->
     function;
 subtype_decode(2) ->
-    binary;
+    binary_old;
 subtype_decode(3) ->
-    uuid;
+    uuid_old;
 subtype_decode(4) ->
     uuid;
 subtype_decode(5) ->
     md5;
 subtype_decode(6) ->
     encrypted;
+subtype_decode(7) ->
+    compressed;
 subtype_decode(128) ->
     user.

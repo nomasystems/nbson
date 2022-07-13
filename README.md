@@ -19,8 +19,6 @@
 | -------- | ----------- |
 | `nbson:encode/1` | Serialize an Erlang term to BSON |
 | `nbson:decode/2` | Deserialize a BSON to an Erlang term |
-| `nbson:lookup/2` | Obtain the value for a given field in the Erlang term representing a BSON, or `undefined` if the given field does not exist |
-| `nbson:at/2` | Same as `nbson:lookup/2` but raises a `missing_field` exception if no value is found for the given field |
 
 ## Implementation
 `nbson` represents BSONs as Erlang proplists with tuple values only.
@@ -55,7 +53,7 @@ The following table represents the association between Erlang types and BSON typ
 On deserialization, we prevent the dynamic generation of atoms by converting BSON Symbol, Max Key and Min Key values to Erlang binaries.
 
 ## Benchmarking
-The BSON decoder implementation in `nbson_decode.erl` uses [CPS](https://en.wikipedia.org/wiki/Continuation-passing_style). In this particular case, CPS leads to the use of the [sub binary delayed optimization](https://www.erlang.org/doc/efficiency_guide/binaryhandling.html#match-context) and improved efficiency in the deserialization process.
+The BSON decoder implementation in `nbson_decoder.erl` uses [CPS](https://en.wikipedia.org/wiki/Continuation-passing_style). In this particular case, CPS leads to the use of the [sub binary delayed optimization](https://www.erlang.org/doc/efficiency_guide/binaryhandling.html#match-context) and improved efficiency in the deserialization process.
 
 The `nbson_BENCH` script under the `bench` directory on this repository measures the decoding and encoding times for a series of BSONs containing from 1 to 1M documents using `nbson`. This escript also executes such deserializations using [bson-erlang](https://github.com/comtihon/bson-erlang), a well-known BSON encoder/decoder, for comparison purposes. To execute the benchmark yourself, please run `rebar3 as bench compile` before executing the script.
 
