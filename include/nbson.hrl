@@ -17,7 +17,7 @@
 %%% TYPES
 -type nbson_key() :: binary().
 -type nbson_value() :: any().
--type document() :: [{nbson_key(), nbson_value()}].
+-type document() :: #{}.
 -type document_path() :: [nbson_key()].
 
 % -ifndef(nbson)
