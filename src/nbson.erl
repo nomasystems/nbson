@@ -30,6 +30,6 @@ encode(Data) ->
 
 -spec decode(Data) -> Result when
     Data :: binary(),
-    Result :: decode_output() | {decode_output(), binary()}.
+    Result :: list(document()).
 decode(Data) ->
     nbson_decoder:decode(Data).

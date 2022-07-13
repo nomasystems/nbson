@@ -19,7 +19,6 @@
 -type nbson_value() :: any().
 -type document() :: #{}.
 -type document_path() :: [nbson_key()].
--type decode_output() :: undefined | document() | list(document()).
 
 % -ifndef(nbson)
 -endif.

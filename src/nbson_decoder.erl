@@ -30,15 +30,13 @@ decode(Bin) when is_binary(Bin) ->
 
 decode(<<?INT32(Size), _Rest/binary>> = Data, Acc) when byte_size(Data) >= Size ->
     case do_decode(Data) of
-        {Doc, <<>>} when Acc == [] ->
-            Doc;
         {Doc, <<>>} ->
             lists:reverse([Doc | Acc]);
         {Doc, Rest} ->
             decode(Rest, [Doc | Acc])
     end;
-decode(Data, Acc) ->
-    {lists:reverse(Acc), Data}.
+decode(Data, _Acc) ->
+    erlang:throw({error, {invalid_bson, Data}}).
 
 do_decode(Bson) ->
     document(Bson, #{}, [document]).
