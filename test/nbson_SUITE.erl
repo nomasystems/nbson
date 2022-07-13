@@ -87,7 +87,7 @@ array(_Config) ->
         <<46, 0, 0, 0, 4, 97, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
     BaseMap = #{<<"arr">> => [1, <<"two">>, <<"three">>]},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 boolean() ->
@@ -95,7 +95,7 @@ boolean() ->
 boolean(_Config) ->
     BaseBin = <<20, 0, 0, 0, 8, 102, 97, 108, 115, 101, 0, 0, 8, 116, 114, 117, 101, 0, 1, 0>>,
     BaseMap = #{<<"true">> => true, <<"false">> => false},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 data_bin() ->
@@ -104,7 +104,7 @@ data_bin(_Config) ->
     BaseBin =
         <<23, 0, 0, 0, 5, 98, 105, 110, 0, 8, 0, 0, 0, 0, 131, 107, 0, 4, 110, 111, 109, 97, 0>>,
     BaseMap = #{<<"bin">> => {data, binary, <<131, 107, 0, 4, 110, 111, 109, 97>>}},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 data_compressed() ->
@@ -118,7 +118,7 @@ data_compressed(_Config) ->
             139, 8, 0, 0, 0, 0, 0, 0, 3, 43, 201, 200, 44, 86, 0, 162, 68, 133, 146, 212, 138, 18,
             0, 33, 62, 234, 238, 14, 0, 0, 0, 0>>,
     BaseMap = #{<<"compressed">> => {data, compressed, GZip}},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 data_encrypted() ->
@@ -134,7 +134,7 @@ data_encrypted(_Config) ->
         <<35, 0, 0, 0, 5, 101, 110, 99, 114, 121, 112, 116, 101, 100, 0, 14, 0, 0, 0, 6, 194, 179,
             26, 216, 90, 53, 38, 51, 98, 78, 27, 228, 65, 164, 0>>,
     BaseMap = #{<<"encrypted">> => {data, encrypted, CipherText}},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap),
     Text = crypto:crypto_one_time_aead(aes_256_gcm, Key, IV, CipherText, AAD, Tag, false).
 
@@ -151,7 +151,7 @@ data_fun(_Config) ->
             {data, function, <<"function square(number) { return number * number; }">>}
     },
 
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 data_md5() ->
@@ -164,7 +164,7 @@ data_md5(_Config) ->
         <<31, 0, 0, 0, 5, 109, 100, 53, 0, 16, 0, 0, 0, 5, 120, 130, 26, 5, 210, 130, 130, 46, 74,
             190, 193, 144, 192, 97, 186, 120, 0>>,
     BaseMap = #{<<"md5">> => {data, md5, MD5}},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 data_uuid() ->
@@ -175,7 +175,7 @@ data_uuid(_Config) ->
             45, 101, 56, 57, 98, 45, 49, 50, 100, 51, 45, 97, 52, 53, 54, 45, 52, 50, 54, 54, 49,
             52, 49, 55, 52, 48, 48, 48, 0>>,
     BaseMap = #{<<"uuid">> => {data, uuid, <<"123e4567-e89b-12d3-a456-426614174000">>}},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 datetime() ->
@@ -183,7 +183,7 @@ datetime() ->
 datetime(_Config) ->
     BaseBin = <<17, 0, 0, 0, 9, 100, 116, 0, 223, 131, 98, 249, 127, 1, 0, 0, 0>>,
     BaseMap = #{<<"dt">> => {1649, 156457, 439000}},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 db_pointer() ->
@@ -196,7 +196,7 @@ db_pointer(_Config) ->
         <<"ptr">> =>
             {pointer, <<"ns">>, <<98, 80, 61, 22, 65, 21, 149, 194, 153, 178, 194, 34>>}
     },
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 double() ->
@@ -204,7 +204,7 @@ double() ->
 double(_Config) ->
     BaseBin = <<18, 0, 0, 0, 1, 111, 110, 101, 0, 0, 0, 0, 0, 0, 0, 240, 63, 0>>,
     BaseMap = #{<<"one">> => 1.0},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 embdoc() ->
@@ -214,7 +214,7 @@ embdoc(_Config) ->
         <<28, 0, 0, 0, 3, 100, 111, 99, 0, 18, 0, 0, 0, 2, 111, 110, 101, 0, 4, 0, 0, 0, 111, 110,
             101, 0, 0, 0>>,
     BaseMap = #{<<"doc">> => #{<<"one">> => <<"one">>}},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 int64() ->
@@ -222,7 +222,7 @@ int64() ->
 int64(_Config) ->
     BaseBin = <<20, 0, 0, 0, 18, 105, 110, 116, 54, 52, 0, 188, 104, 151, 147, 227, 13, 1, 23, 0>>,
     BaseMap = #{<<"int64">> => 1657621408933963964},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 js() ->
@@ -232,7 +232,7 @@ js(_Config) ->
         <<41, 0, 0, 0, 13, 99, 111, 100, 101, 0, 26, 0, 0, 0, 102, 117, 110, 99, 116, 105, 111, 110,
             40, 120, 41, 32, 123, 32, 114, 101, 116, 117, 114, 110, 32, 120, 59, 32, 125, 0, 0>>,
     BaseMap = #{<<"code">> => {javascript, #{}, <<"function(x) { return x; }">>}},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 js_ws() ->
@@ -243,7 +243,7 @@ js_ws(_Config) ->
             105, 111, 110, 32, 40, 120, 41, 123, 32, 114, 101, 116, 117, 114, 110, 32, 120, 32, 42,
             32, 120, 59, 32, 125, 0, 12, 0, 0, 0, 16, 120, 0, 1, 0, 0, 0, 0, 0>>,
     BaseMap = #{<<"jsws">> => {javascript, #{<<"x">> => 1}, <<"function (x){ return x * x; }">>}},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 max_key() ->
@@ -251,7 +251,7 @@ max_key() ->
 max_key(_Config) ->
     BaseBin = <<14, 0, 0, 0, 127, 109, 97, 120, 95, 107, 101, 121, 0, 0>>,
     BaseMap = #{<<"max_key">> => max_key},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 min_key() ->
@@ -259,7 +259,7 @@ min_key() ->
 min_key(_Config) ->
     BaseBin = <<14, 0, 0, 0, 255, 109, 105, 110, 95, 107, 101, 121, 0, 0>>,
     BaseMap = #{<<"min_key">> => min_key},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 null() ->
@@ -267,7 +267,7 @@ null() ->
 null(_Config) ->
     BaseBin = <<10, 0, 0, 0, 10, 111, 112, 116, 0, 0>>,
     BaseMap = #{<<"opt">> => null},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 obj_id() ->
@@ -275,7 +275,7 @@ obj_id() ->
 obj_id(_Config) ->
     BaseBin = <<22, 0, 0, 0, 7, 95, 105, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0>>,
     BaseMap = #{<<"_id">> => {object_id, <<0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1>>}},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 regex() ->
@@ -285,7 +285,7 @@ regex(_Config) ->
         <<29, 0, 0, 0, 11, 110, 97, 109, 101, 0, 47, 94, 110, 111, 109, 97, 45, 91, 48, 45, 57, 93,
             46, 42, 47, 0, 105, 0, 0>>,
     BaseMap = #{<<"name">> => {regex, <<"/^noma-[0-9].*/">>, <<"i">>}},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 string() ->
@@ -293,7 +293,7 @@ string() ->
 string(_Config) ->
     BaseBin = <<18, 0, 0, 0, 2, 115, 116, 114, 0, 4, 0, 0, 0, 115, 116, 114, 0, 0>>,
     BaseMap = #{<<"str">> => <<"str">>},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 symbols() ->
@@ -301,7 +301,7 @@ symbols() ->
 symbols(_Config) ->
     BaseBin = <<15, 0, 0, 0, 14, 97, 0, 3, 0, 0, 0, 97, 98, 0, 0>>,
     BaseMap = #{<<"a">> => ab},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 timestamp() ->
@@ -311,7 +311,7 @@ timestamp(_Config) ->
         <<24, 0, 0, 0, 17, 116, 105, 109, 101, 115, 116, 97, 109, 112, 0, 193, 80, 205, 98, 1, 0, 0,
             0, 0>>,
     BaseMap = #{<<"timestamp">> => {timestamp, 1657622721, 1}},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 undef() ->
@@ -319,7 +319,7 @@ undef() ->
 undef(_Config) ->
     BaseBin = <<8, 0, 0, 0, 6, 97, 0, 0>>,
     BaseMap = #{<<"a">> => undefined},
-    BaseMap = nbson:decode(BaseBin),
+    [BaseMap] = nbson:decode(BaseBin),
     BaseBin = nbson:encode(BaseMap).
 
 multi() ->
@@ -453,8 +453,7 @@ multi(_Config) ->
     Documents = nbson:decode(Encoded),
 
     {Part, _Rest} = erlang:split_binary(Encoded, byte_size(Encoded) - 100),
-    {PartDocuments, _RestDecoding} = nbson:decode(Part),
-    true = (length(PartDocuments) < length(Documents)),
+    {error, {invalid_bson, _}} = catch nbson:decode(Part),
     ok.
 
 various() ->
