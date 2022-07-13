@@ -18,10 +18,23 @@
 
 %%% EXTERNAL EXPORTS
 -export([encode/1, decode/1]).
+-export([at/2, lookup/2]).
 
 %%%-----------------------------------------------------------------------------
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
+-spec at(Path, Document) -> Result when
+    Path :: document_path(),
+    Document :: document(),
+    Result :: nbson_value().
+at(Path, Document) ->
+    case lookup(Path, Document) of
+        undefined ->
+            erlang:throw({error, {nbson_missing_field, Path}});
+        Value ->
+            Value
+    end.
+
 -spec encode(Data) -> Result when
     Data :: undefined | document() | list(document()),
     Result :: binary() | list(binary()).
@@ -33,3 +46,19 @@ encode(Data) ->
     Result :: list(document()).
 decode(Data) ->
     nbson_decoder:decode(Data).
+
+-spec lookup(Path, Document) -> Result when
+    Path :: document_path() | nbson_key(),
+    Document :: document(),
+    Result :: nbson_value().
+lookup([], Document) ->
+    Document;
+lookup([Label | Rest], Document) when is_binary(Label) ->
+    case maps:get(Label, Document, nbson_lookup_not_found) of
+        nbson_lookup_not_found ->
+            undefined;
+        Value ->
+            lookup(Rest, Value)
+    end;
+lookup(Label, Document) when is_binary(Label) ->
+    lookup([Label], Document).
