@@ -23,13 +23,13 @@
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
 -spec encode(Data) -> Result when
-    Data :: document(),
+    Data :: undefined | document() | list(document()),
     Result :: binary() | list(binary()).
 encode(Data) ->
     nbson_encoder:encode(Data).
 
 -spec decode(Data) -> Result when
     Data :: binary(),
-    Result :: document() | list(document()).
+    Result :: decode_output() | {decode_output(), binary()}.
 decode(Data) ->
     nbson_decoder:decode(Data).
