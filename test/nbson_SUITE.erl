@@ -452,6 +452,10 @@ multi(_Config) ->
     Encoded = nbson:encode(Documents),
     Documents = nbson:decode(Encoded),
 
+    Document = lists:nth(3, Documents),
+    3118048609991648864 = nbson:get(<<"64bit_int-Rg==">>, Document),
+    undefined = nbson:get([<<"test">>, <<"test">>], Document),
+
     {Part, _Rest} = erlang:split_binary(Encoded, byte_size(Encoded) - 100),
     {error, {invalid_bson, _}} = catch nbson:decode(Part),
     ok.

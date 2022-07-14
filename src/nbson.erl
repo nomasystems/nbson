@@ -17,7 +17,7 @@
 -include("nbson.hrl").
 
 %%% EXTERNAL EXPORTS
--export([encode/1, decode/1]).
+-export([encode/1, decode/1, get/2]).
 
 %%%-----------------------------------------------------------------------------
 %%% EXTERNAL EXPORTS
@@ -33,3 +33,19 @@ encode(Data) ->
     Result :: list(document()).
 decode(Data) ->
     nbson_decoder:decode(Data).
+
+-spec get(Path, Document) -> Result when
+    Path :: document_path() | nbson_key(),
+    Document :: document(),
+    Result :: nbson_value().
+get([], Document) ->
+    Document;
+get([Label | Rest], Document) when is_binary(Label) ->
+    case maps:get(Label, Document, nbson_get_not_found) of
+        nbson_get_not_found ->
+            undefined;
+        Value ->
+            get(Rest, Value)
+    end;
+get(Label, Document) when is_binary(Label) ->
+    get([Label], Document).
