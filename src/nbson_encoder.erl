@@ -31,6 +31,8 @@ encode(Document) when is_map(Document), map_size(Document) == 0 ->
     ?EMPTY_DOC;
 encode(Document) when is_map(Document) ->
     encode_map(Document);
+encode(Data) when is_list(Data), is_tuple(hd(Data)) ->
+    encode_proplist(Data);
 encode(Data) when is_list(Data), is_map(hd(Data)) ->
     <<<<<<(encode_map(Doc))/binary>> || Doc <- Data>>/binary>>.
 
@@ -55,11 +57,28 @@ map_fold_encode(Label, Value, Acc) ->
     {Type, Payload} = encode_value(Value),
     <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Label)), Payload/binary>>.
 
+encode_proplist([{}]) ->
+    ?EMPTY_DOC;
+encode_proplist(Proplist) ->
+    Encoded = encode_proplist(Proplist, <<>>),
+    <<?INT32(byte_size(Encoded) + 5), Encoded/binary, ?NULL>>.
+
+encode_proplist([], Acc) ->
+    Acc;
+encode_proplist([{Label, Value} | Rest], Acc) ->
+    {Type, Payload} = encode_value(Value),
+    encode_proplist(
+        Rest,
+        <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Label)), Payload/binary>>
+    ).
+
 encode_value(V) when is_float(V) ->
     {?DOUBLE_TYPE, <<?DOUBLE(V)>>};
 encode_value(V) when is_binary(V) ->
     {?STRING_TYPE, <<?INT32(byte_size(V) + 1), ?CSTRING(V)>>};
 encode_value(V) when is_map(V) ->
+    {?EMBDOC_TYPE, encode(V)};
+encode_value(V) when is_list(V), is_tuple(hd(V)) ->
     {?EMBDOC_TYPE, encode(V)};
 encode_value(V) when is_list(V) ->
     {?ARRAY_TYPE, encode_list(V)};

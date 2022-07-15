@@ -46,6 +46,7 @@ all() ->
         undef,
         %%%
         multi,
+        proplists,
         various
     ].
 
@@ -459,6 +460,22 @@ multi(_Config) ->
     {Part, _Rest} = erlang:split_binary(Encoded, byte_size(Encoded) - 100),
     {error, {invalid_bson, _}} = catch nbson:decode(Part),
     ok.
+
+proplists() ->
+    [{userdata, [{doc, "Tests various previously untested cases."}]}].
+proplists(_Config) ->
+    <<5, 0, 0, 0, 0>> = nbson:encode([{}]),
+
+    <<46, 0, 0, 0, 4, 97, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
+        116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0,
+        0>> =
+        nbson:encode([{<<"arr">>, [1, <<"two">>, <<"three">>]}]),
+
+    <<64, 0, 0, 0, 4, 97, 114, 114, 0, 54, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
+        116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 3, 51, 0, 15, 0, 0, 0,
+        16, 102, 111, 117, 114, 0, 4, 0, 0, 0, 0, 0,
+        0>> =
+        nbson:encode([{<<"arr">>, [1, <<"two">>, <<"three">>, [{<<"four">>, 4}]]}]).
 
 various() ->
     [{userdata, [{doc, "Tests various previously untested cases."}]}].
