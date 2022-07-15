@@ -57,21 +57,20 @@ map_fold_encode(Label, Value, Acc) ->
     {Type, Payload} = encode_value(Value),
     <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Label)), Payload/binary>>.
 
-
 encode_proplist([{}]) ->
     ?EMPTY_DOC;
 encode_proplist(Proplist) ->
     Encoded = encode_proplist(Proplist, <<>>),
     <<?INT32(byte_size(Encoded) + 5), Encoded/binary, ?NULL>>.
 
-
 encode_proplist([], Acc) ->
     Acc;
 encode_proplist([{Label, Value} | Rest], Acc) ->
     {Type, Payload} = encode_value(Value),
-    encode_proplist(Rest,
-                    <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Label)), Payload/binary>>).
-
+    encode_proplist(
+        Rest,
+        <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Label)), Payload/binary>>
+    ).
 
 encode_value(V) when is_float(V) ->
     {?DOUBLE_TYPE, <<?DOUBLE(V)>>};
