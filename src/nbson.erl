@@ -13,11 +13,16 @@
 %% limitations under the License.
 -module(nbson).
 
-%%% INCLUDES
--include("nbson.hrl").
-
 %%% EXTERNAL EXPORTS
 -export([encode/1, decode/1, get/2]).
+
+%%% TYPES
+-type nbson_key() :: binary().
+-type nbson_value() :: any().
+-type document() :: #{} | proplists:proplist().
+-type document_path() :: [nbson_key()].
+
+-export_type([document/0]).
 
 %%%-----------------------------------------------------------------------------
 %%% EXTERNAL EXPORTS
