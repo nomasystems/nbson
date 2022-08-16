@@ -31,7 +31,9 @@ encode(Document) when is_map(Document), map_size(Document) == 0 ->
     ?EMPTY_DOC;
 encode(Document) when is_map(Document) ->
     encode_map(Document);
-encode(Data) when is_list(Data), is_tuple(hd(Data)) ->
+encode([{}]) ->
+    ?EMPTY_DOC;
+encode(Data) when is_list(Data), is_tuple(hd(Data)), size(hd(Data)) == 2 ->
     encode_proplist(Data);
 encode(Data) when is_list(Data), is_map(hd(Data)) ->
     <<<<<<(encode_map(Doc))/binary>> || Doc <- Data>>/binary>>.
@@ -53,18 +55,20 @@ encode_map(Document) ->
     Encoded = maps:fold(fun map_fold_encode/3, <<>>, Document),
     <<?INT32(byte_size(Encoded) + 5), Encoded/binary, ?NULL>>.
 
+map_fold_encode(_Label, undefined, Acc) ->
+    Acc;
 map_fold_encode(Label, Value, Acc) ->
     {Type, Payload} = encode_value(Value),
     <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Label)), Payload/binary>>.
 
-encode_proplist([{}]) ->
-    ?EMPTY_DOC;
 encode_proplist(Proplist) ->
     Encoded = encode_proplist(Proplist, <<>>),
     <<?INT32(byte_size(Encoded) + 5), Encoded/binary, ?NULL>>.
 
 encode_proplist([], Acc) ->
     Acc;
+encode_proplist([{_Label, undefined} | Rest], Acc) ->
+    encode_proplist(Rest, Acc);
 encode_proplist([{Label, Value} | Rest], Acc) ->
     {Type, Payload} = encode_value(Value),
     encode_proplist(
@@ -78,7 +82,7 @@ encode_value(V) when is_binary(V) ->
     {?STRING_TYPE, <<?INT32(byte_size(V) + 1), ?CSTRING(V)>>};
 encode_value(V) when is_map(V) ->
     {?EMBDOC_TYPE, encode(V)};
-encode_value(V) when is_list(V), is_tuple(hd(V)) ->
+encode_value(V) when is_list(V), is_tuple(hd(V)), size(hd(V)) == 2 ->
     {?EMBDOC_TYPE, encode(V)};
 encode_value(V) when is_list(V) ->
     {?ARRAY_TYPE, encode_list(V)};

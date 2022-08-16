@@ -318,10 +318,11 @@ timestamp(_Config) ->
 undef() ->
     [{userdata, [{doc, "Tests undef data type BSON decoder API."}]}].
 undef(_Config) ->
-    BaseBin = <<8, 0, 0, 0, 6, 97, 0, 0>>,
-    BaseMap = #{<<"a">> => undefined},
-    [BaseMap] = nbson:decode(BaseBin),
-    BaseBin = nbson:encode(BaseMap).
+    BaseBin = <<14, 0, 0, 0, 14, 98, 0, 2, 0, 0, 0, 99, 0, 0>>,
+    BaseMap1 = #{<<"a">> => undefined, <<"b">> => c},
+    BaseMap2 = #{<<"b">> => c},
+    [BaseMap2] = nbson:decode(BaseBin),
+    BaseBin = nbson:encode(BaseMap1).
 
 multi() ->
     [{userdata, [{doc, "Tests multi document decode untested cases."}]}].
@@ -355,8 +356,7 @@ multi(_Config) ->
                         {regex, <<"ig==">>, <<"imxs">>}
                 },
             <<"object_id-dw==">> => {object_id, <<"30a06cdc41cf">>},
-            <<"timestamp-iKfl">> => {timestamp, 83558059, 1109549932},
-            <<"undefined-huu8">> => undefined
+            <<"timestamp-iKfl">> => {timestamp, 83558059, 1109549932}
         },
         #{
             <<"max_key-mao=">> => maxkey,
@@ -378,7 +378,6 @@ multi(_Config) ->
             <<"64bit_int-7+2xKA==">> => 3975528678009248538,
             <<"array-MBBJew==">> =>
                 [
-                    undefined,
                     {regex, <<"5OY=">>, <<"imxs">>},
                     {regex, <<"aud4xw==">>, <<"imxs">>}
                 ],
@@ -394,7 +393,7 @@ multi(_Config) ->
         },
         #{
             <<"array-nxmm">> =>
-                [null, undefined, 43442543.6892035, <<"cGp+kW0cscjqPw==">>],
+                [null, 43442543.6892035, <<"cGp+kW0cscjqPw==">>],
             <<"binary_data-IpY=">> =>
                 {data, function, <<132, 181, 215, 203, 197, 149, 154>>},
             <<"binary_data-ZPVL">> =>
@@ -445,9 +444,9 @@ multi(_Config) ->
             <<"object-nw==">> =>
                 #{
                     <<"object-EeLF">> =>
-                        #{<<"undefined-BStQeQ==">> => undefined}
+                        #{<<"undefined-BStQeQ==">> => null}
                 },
-            <<"undefined-2g==">> => undefined
+            <<"undefined-2g==">> => null
         }
     ],
     Encoded = nbson:encode(Documents),
