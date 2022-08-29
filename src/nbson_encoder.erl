@@ -113,14 +113,12 @@ encode_value({Mega, Sec, Micro}) when is_integer(Mega), is_integer(Sec), is_inte
 encode_value(null) ->
     {?NULL_TYPE, <<>>};
 encode_value({regex, Pattern, Options}) ->
-    PBin = unicode:characters_to_binary(Pattern),
-    OBin = unicode:characters_to_binary(Options),
-    case {erlang:is_binary(PBin), erlang:is_binary(OBin)} of
-        {true, true} ->
+    case {unicode:characters_to_binary(Pattern), unicode:characters_to_binary(Options)} of
+        {PBin, OBin} when is_binary(PBin) andalso is_binary(OBin) ->
             {?REGEX_TYPE, <<?CSTRING(PBin), ?CSTRING(OBin)>>};
         _false ->
             erlang:throw(
-                {badarg, {PBin, OBin}, [
+                {badarg, {Pattern, Options}, [
                     {error_info, #{
                         module => nbson_encoder, function => encode_value, cause => not_unicode
                     }}
