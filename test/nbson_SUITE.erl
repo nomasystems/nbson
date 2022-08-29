@@ -457,7 +457,9 @@ multi(_Config) ->
     undefined = nbson:get([<<"test">>, <<"test">>], Document),
 
     {Part, _Rest} = erlang:split_binary(Encoded, byte_size(Encoded) - 100),
-    {error, {invalid_bson, _}} = catch nbson:decode(Part),
+    {badarg, _Arg, [
+        {error_info, #{cause := invalid_bson, function := decode, module := nbson_decoder}}
+    ]} = catch nbson:decode(Part),
     ok.
 
 proplists() ->
