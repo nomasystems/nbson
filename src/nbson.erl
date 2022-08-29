@@ -56,14 +56,14 @@ do_get([Label | Rest], Document) when is_map(Document) ->
         nbson_get_not_found ->
             undefined;
         Value ->
-            get(Rest, Value)
+            do_get(Rest, Value)
     end;
 do_get([Label | Rest], Document) when is_list(Document) ->
     case proplists:get_value(Label, Document, nbson_get_not_found) of
         nbson_get_not_found ->
             undefined;
         Value ->
-            get(Rest, Value)
+            do_get(Rest, Value)
     end;
 do_get(Label, Document) when is_binary(Label) ->
     do_get([Label], Document).
