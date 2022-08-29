@@ -19,7 +19,7 @@
 %%% TYPES
 -type nbson_key() :: binary().
 -type nbson_value() :: any().
--type document() :: #{} | proplists:proplist().
+-type document() :: #{nbson_key() => nbson_value()} | [{nbson_key(), nbson_value()}].
 -type document_path() :: [nbson_key()].
 
 -export_type([document/0]).
@@ -43,14 +43,27 @@ decode(Data) ->
     Path :: document_path() | nbson_key(),
     Document :: document(),
     Result :: nbson_value().
-get([], Document) ->
+get(Path, Document) ->
+    do_get(Path, Document).
+
+%%%-----------------------------------------------------------------------------
+%%% INTERNAL FUNCTIONS
+%%%-----------------------------------------------------------------------------
+do_get([], Document) ->
     Document;
-get([Label | Rest], Document) when is_binary(Label) ->
+do_get([Label | Rest], Document) when is_map(Document) ->
     case maps:get(Label, Document, nbson_get_not_found) of
         nbson_get_not_found ->
             undefined;
         Value ->
-            get(Rest, Value)
+            do_get(Rest, Value)
     end;
-get(Label, Document) when is_binary(Label) ->
-    get([Label], Document).
+do_get([Label | Rest], Document) when is_list(Document) ->
+    case proplists:get_value(Label, Document, nbson_get_not_found) of
+        nbson_get_not_found ->
+            undefined;
+        Value ->
+            do_get(Rest, Value)
+    end;
+do_get(Label, Document) when is_binary(Label) ->
+    do_get([Label], Document).

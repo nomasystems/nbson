@@ -113,10 +113,18 @@ encode_value({Mega, Sec, Micro}) when is_integer(Mega), is_integer(Sec), is_inte
 encode_value(null) ->
     {?NULL_TYPE, <<>>};
 encode_value({regex, Pattern, Options}) ->
-    {?REGEX_TYPE, <<
-        ?CSTRING(unicode:characters_to_binary(Pattern)),
-        ?CSTRING(unicode:characters_to_binary(Options))
-    >>};
+    case {unicode:characters_to_binary(Pattern), unicode:characters_to_binary(Options)} of
+        {PBin, OBin} when is_binary(PBin) andalso is_binary(OBin) ->
+            {?REGEX_TYPE, <<?CSTRING(PBin), ?CSTRING(OBin)>>};
+        _false ->
+            erlang:throw(
+                {badarg, {Pattern, Options}, [
+                    {error_info, #{
+                        module => nbson_encoder, function => encode_value, cause => not_unicode
+                    }}
+                ]}
+            )
+    end;
 encode_value({pointer, Collection, <<_:96>> = Id}) ->
     {?DBPOINTER_TYPE, <<?INT32(byte_size(Collection) + 1), ?CSTRING(Collection), Id/binary>>};
 encode_value({javascript, Map, Code}) when is_map(Map), map_size(Map) == 0, is_binary(Code) ->
@@ -135,7 +143,13 @@ encode_value({timestamp, Inc, Time}) ->
 encode_value(V) when is_integer(V), -16#8000000000000000 =< V, V =< 16#7fffffffffffffff ->
     {?INT64_TYPE, <<?INT64(V)>>};
 encode_value(V) when is_integer(V) ->
-    erlang:error(integer_too_large, [V]);
+    erlang:throw(
+        {badarg, V, [
+            {error_info, #{
+                module => nbson_encoder, function => encode_value, cause => integer_too_large
+            }}
+        ]}
+    );
 encode_value(max_key) ->
     {?MAXKEY_TYPE, <<>>};
 encode_value(min_key) ->
