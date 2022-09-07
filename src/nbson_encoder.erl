@@ -82,7 +82,7 @@ encode_value(V) when is_binary(V) ->
     {?STRING_TYPE, <<?INT32(byte_size(V) + 1), ?CSTRING(V)>>};
 encode_value(V) when is_map(V) ->
     {?EMBDOC_TYPE, encode(V)};
-encode_value(V) when is_list(V), is_tuple(hd(V)), size(hd(V)) == 2 ->
+encode_value(V) when is_list(V), is_tuple(hd(V)), is_binary(element(1, hd(V))) ->
     {?EMBDOC_TYPE, encode(V)};
 encode_value(V) when is_list(V) ->
     {?ARRAY_TYPE, encode_list(V)};
