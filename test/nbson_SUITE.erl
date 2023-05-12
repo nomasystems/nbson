@@ -113,10 +113,13 @@ data_compressed() ->
 data_compressed(_Config) ->
     Base = <<"this is a text">>,
     GZip = zlib:gzip(Base),
-
+    % The 10th byte of the gzip header encodes the OS;
+    % ensure that this doesn't affect the portability of the test.
+    % https://www.rfc-editor.org/rfc/rfc1952#section-2.3
+    OS = binary:at(GZip, 9),
     BaseBin =
         <<54, 0, 0, 0, 5, 99, 111, 109, 112, 114, 101, 115, 115, 101, 100, 0, 32, 0, 0, 0, 7, 31,
-            139, 8, 0, 0, 0, 0, 0, 0, 3, 43, 201, 200, 44, 86, 0, 162, 68, 133, 146, 212, 138, 18,
+            139, 8, 0, 0, 0, 0, 0, 0, OS, 43, 201, 200, 44, 86, 0, 162, 68, 133, 146, 212, 138, 18,
             0, 33, 62, 234, 238, 14, 0, 0, 0, 0>>,
     BaseMap = #{<<"compressed">> => {data, compressed, GZip}},
     [BaseMap] = nbson:decode(BaseBin),
