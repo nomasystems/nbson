@@ -17,32 +17,38 @@
 -export([encode/1, decode/1, get/2]).
 
 %%% TYPES
--type nbson_key() :: binary().
--type nbson_value() :: any().
--type document() :: #{nbson_key() => nbson_value()} | [{nbson_key(), nbson_value()}].
--type document_path() :: [nbson_key()].
+-type document() :: #{key() => value()} | [{key(), value()}].
+-type document_path() :: [key()].
+-type key() :: binary().
+-type value() :: any().
 
--export_type([document/0]).
+%%% EXPORT TYPES
+-export_type([
+    document/0,
+    document_path/0,
+    key/0,
+    value/0
+]).
 
 %%%-----------------------------------------------------------------------------
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
 -spec encode(Data) -> Result when
-    Data :: undefined | document() | list(document()),
-    Result :: binary() | list(binary()).
+    Data :: undefined | document() | [document()],
+    Result :: binary() | [binary()].
 encode(Data) ->
     nbson_encoder:encode(Data).
 
 -spec decode(Data) -> Result when
     Data :: binary(),
-    Result :: list(document()).
+    Result :: [document()].
 decode(Data) ->
     nbson_decoder:decode(Data).
 
 -spec get(Path, Document) -> Result when
-    Path :: document_path() | nbson_key(),
+    Path :: document_path() | key(),
     Document :: document(),
-    Result :: nbson_value().
+    Result :: value().
 get(Path, Document) ->
     do_get(Path, Document).
 
