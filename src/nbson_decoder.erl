@@ -37,14 +37,16 @@ decode(<<?INT32(Size), _Rest/binary>> = Data, Acc) when byte_size(Data) >= Size 
         {Doc, Rest} ->
             decode(Rest, [Doc | Acc])
     end;
-decode(Data, _Acc) ->
-    erlang:throw(
-        {badarg, Data, [
-            {error_info, #{
-                module => nbson_decoder, function => decode, cause => invalid_bson
-            }}
-        ]}
-    ).
+decode(Data, Acc) ->
+    io:format("Error: ~p~n", [Acc]),
+    {error, bson, #{cause => invalid_bson, function => decode, module => nbson_decoder, data => Data}}.
+    %erlang:throw(
+    %    {badarg, Data, [
+    %        {error_info, #{
+    %            module => nbson_decoder, function => decode, cause => invalid_bson
+    %        }}
+    %    ]}
+    %).
 
 do_decode(Bson) ->
     document(Bson, #{}, [document]).
