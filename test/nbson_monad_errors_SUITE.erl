@@ -22,7 +22,7 @@
 %%%-----------------------------------------------------------------------------
 all() ->
     [
-     decode_errors
+        decode_errors
     ].
 
 %%%-----------------------------------------------------------------------------
@@ -58,7 +58,7 @@ end_per_testcase(Case, Conf) ->
 %%%-----------------------------------------------------------------------------
 %        <<46, 0, 0, 0, 4, 97, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
 %            116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
- 
+
 decode_errors() ->
     [{userdata, [{doc, "Tests errors on BSON decoder API."}]}].
 decode_errors(_Config) ->
@@ -72,50 +72,69 @@ decode_errors(_Config) ->
         <<0, 0, 0, 4, 97, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
 
-    {error, bson, #{cause := invalid_bson, function := decode, module := nbson_decoder, data := Data1}} = nbson:decode(BaseBin1),
+    {error,
+        {bson, #{cause := invalid_bson, function := decode, module := nbson_decoder, data := Data1}}} = nbson:decode(
+        BaseBin1
+    ),
     ct:print("BaseBin1: ~p~n", [Data1]),
 
     BaseBin2 =
         <<46, 0, 0, 4, 97, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
 
-    {error, bson, #{cause := invalid_bson, function := decode, module := nbson_decoder, data := Data2}} = nbson:decode(BaseBin2),
+    {error,
+        {bson, #{cause := invalid_bson, function := decode, module := nbson_decoder, data := Data2}}} = nbson:decode(
+        BaseBin2
+    ),
     ct:print("BaseBin1: ~p~n", [Data2]),
 
     BaseBin3 =
         <<46, 0, 0, 0, 97, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
 
-    {error, bson, #{cause := invalid_bson, function := decode, module := nbson_decoder, data := Data3}} = nbson:decode(BaseBin3),
+    {error,
+        {bson, #{cause := invalid_bson, function := decode, module := nbson_decoder, data := Data3}}} = nbson:decode(
+        BaseBin3
+    ),
     ct:print("BaseBin1: ~p~n", [Data3]),
 
     BaseBin4 =
         <<46, 0, 0, 0, 4, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
 
-    {error, bson, #{cause := invalid_bson, function := decode, module := nbson_decoder, data := Data4}} = nbson:decode(BaseBin4),
+    {error,
+        {bson, #{cause := invalid_bson, function := decode, module := nbson_decoder, data := Data4}}} = nbson:decode(
+        BaseBin4
+    ),
     ct:print("BaseBin1: ~p~n", [Data4]),
 
     BaseBin5 =
         <<46, 0, 0, 0, 4, 97, 114, 114, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
 
-    {error, bson, #{cause := invalid_bson, function := decode, module := nbson_decoder, data := Data5}} = nbson:decode(BaseBin5),
+    {error,
+        {bson, #{cause := invalid_bson, function := decode, module := nbson_decoder, data := Data5}}} = nbson:decode(
+        BaseBin5
+    ),
     ct:print("BaseBin1: ~p~n", [Data5]),
 
     BaseBin6 =
         <<46, 0, 0, 0, 4, 97, 114, 114, 0, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
 
-    {error, bson, #{cause := invalid_bson, function := decode, module := nbson_decoder, data := Data6}} = nbson:decode(BaseBin6),
+    {error,
+        {bson, #{cause := invalid_bson, function := decode, module := nbson_decoder, data := Data6}}} = nbson:decode(
+        BaseBin6
+    ),
     ct:print("BaseBin1: ~p~n", [Data6]),
 
     BaseBin7 =
         <<46, 0, 0, 0, 4, 97, 114, 114, 0, 36, 0, 0, 0>>,
 
-    {error, bson, #{cause := invalid_bson, function := decode, module := nbson_decoder, data := Data7}} = nbson:decode(BaseBin7),
+    {error,
+        {bson, #{cause := invalid_bson, function := decode, module := nbson_decoder, data := Data7}}} = nbson:decode(
+        BaseBin7
+    ),
     ct:print("BaseBin1: ~p~n", [Data7]),
 
-
     ok.
-

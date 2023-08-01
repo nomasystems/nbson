@@ -44,37 +44,61 @@ encode(Data) when is_list(Data), is_map(hd(Data)) ->
 encode_list([]) ->
     ?EMPTY_DOC;
 encode_list(Documents) ->
-    {_, Encoded} = lists:foldl(fun list_fold_encode/2, {0, <<>>}, Documents),
-    <<?INT32(byte_size(Encoded) + 5), Encoded/binary, ?NULL>>.
+    case foldwhile(fun list_fold_encode/2, {0, <<>>}, Documents) of
+        {error, _Reason} = Error ->
+            Error;
+        {_, Encoded} ->
+            <<?INT32(byte_size(Encoded) + 5), Encoded/binary, ?NULL>>
+    end.
 
 list_fold_encode(Document, {Pos, Acc}) ->
-    {Type, Payload} = encode_value(Document),
-    {Pos + 1, <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Pos)), Payload/binary>>}.
+    case encode_value(Document) of
+        {error, _Reason} = Error ->
+            Error;
+        {Type, Payload} ->
+            {Pos + 1, <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Pos)), Payload/binary>>}
+    end.
 
 encode_map(Document) ->
-    Encoded = maps:fold(fun map_fold_encode/3, <<>>, Document),
-    <<?INT32(byte_size(Encoded) + 5), Encoded/binary, ?NULL>>.
+    case maps:fold(fun map_fold_encode/3, <<>>, Document) of
+        {error, _Reason} = Error ->
+            Error;
+        Encoded ->
+            <<?INT32(byte_size(Encoded) + 5), Encoded/binary, ?NULL>>
+    end.
 
 map_fold_encode(_Label, undefined, Acc) ->
     Acc;
 map_fold_encode(Label, Value, Acc) ->
-    {Type, Payload} = encode_value(Value),
-    <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Label)), Payload/binary>>.
+    case encode_value(Value) of
+        {error, _Reason} = Error ->
+            Error;
+        {Type, Payload} ->
+            <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Label)), Payload/binary>>
+    end.
 
 encode_proplist(Proplist) ->
-    Encoded = encode_proplist(Proplist, <<>>),
-    <<?INT32(byte_size(Encoded) + 5), Encoded/binary, ?NULL>>.
+    case encode_proplist(Proplist, <<>>) of
+        {error, _Reason} = Error ->
+            Error;
+        Encoded ->
+            <<?INT32(byte_size(Encoded) + 5), Encoded/binary, ?NULL>>
+    end.
 
 encode_proplist([], Acc) ->
     Acc;
 encode_proplist([{_Label, undefined} | Rest], Acc) ->
     encode_proplist(Rest, Acc);
 encode_proplist([{Label, Value} | Rest], Acc) ->
-    {Type, Payload} = encode_value(Value),
-    encode_proplist(
-        Rest,
-        <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Label)), Payload/binary>>
-    ).
+    case encode_value(Value) of
+        {error, _Reason} = Error ->
+            Error;
+        {Type, Payload} ->
+            encode_proplist(
+                Rest,
+                <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Label)), Payload/binary>>
+            )
+    end.
 
 encode_value(V) when is_float(V) ->
     {?DOUBLE_TYPE, <<?DOUBLE(V)>>};
@@ -116,14 +140,14 @@ encode_value({regex, Pattern, Options}) ->
     case {unicode:characters_to_binary(Pattern), unicode:characters_to_binary(Options)} of
         {PBin, OBin} when is_binary(PBin) andalso is_binary(OBin) ->
             {?REGEX_TYPE, <<?CSTRING(PBin), ?CSTRING(OBin)>>};
-        _false ->
-            erlang:throw(
-                {badarg, {Pattern, Options}, [
-                    {error_info, #{
-                        module => nbson_encoder, function => encode_value, cause => not_unicode
-                    }}
-                ]}
-            )
+        _NotUnicode ->
+            {error,
+                {bson, #{
+                    module => nbson_encoder,
+                    function => encode_value,
+                    cause => not_unicode_regex,
+                    data => {Pattern, Options}
+                }}}
     end;
 encode_value({pointer, Collection, <<_:96>> = Id}) ->
     {?DBPOINTER_TYPE, <<?INT32(byte_size(Collection) + 1), ?CSTRING(Collection), Id/binary>>};
@@ -143,13 +167,13 @@ encode_value({timestamp, Inc, Time}) ->
 encode_value(V) when is_integer(V), -16#8000000000000000 =< V, V =< 16#7fffffffffffffff ->
     {?INT64_TYPE, <<?INT64(V)>>};
 encode_value(V) when is_integer(V) ->
-    erlang:throw(
-        {badarg, V, [
-            {error_info, #{
-                module => nbson_encoder, function => encode_value, cause => integer_too_large
-            }}
-        ]}
-    );
+    {error,
+        {bson, #{
+            module => nbson_encoder,
+            function => encode_value,
+            cause => integer_too_large,
+            data => V
+        }}};
 encode_value(max_key) ->
     {?MAXKEY_TYPE, <<>>};
 encode_value(min_key) ->
@@ -159,3 +183,13 @@ encode_label(Label) when is_integer(Label) ->
     integer_to_binary(Label);
 encode_label(Label) when is_binary(Label) ->
     Label.
+
+foldwhile(F, Accu, [Hd | Tail]) when is_function(F, 2) ->
+    case F(Hd, Accu) of
+        {error, _Reason} = Error ->
+            Error;
+        AccOut ->
+            foldwhile(F, AccOut, Tail)
+    end;
+foldwhile(F, Accu, []) when is_function(F, 2) ->
+    Accu.
