@@ -26,17 +26,27 @@
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
 encode(undefined) ->
-    <<>>;
+    {ok, <<>>};
 encode(Document) when is_map(Document), map_size(Document) == 0 ->
-    ?EMPTY_DOC;
+    {ok, ?EMPTY_DOC};
 encode(Document) when is_map(Document) ->
-    encode_map(Document);
+    case encode_map(Document) of
+        {error, _Reason} = Error ->
+            Error;
+        Encoded ->
+            {ok, Encoded}
+    end;
 encode([{}]) ->
-    ?EMPTY_DOC;
+    {ok, ?EMPTY_DOC};
 encode(Data) when is_list(Data), is_tuple(hd(Data)), size(hd(Data)) == 2 ->
-    encode_proplist(Data);
+    case encode_proplist(Data) of
+        {error, _Reason} = Error ->
+            Error;
+        Encoded ->
+            {ok, Encoded}
+    end;
 encode(Data) when is_list(Data), is_map(hd(Data)) ->
-    <<<<<<(encode_map(Doc))/binary>> || Doc <- Data>>/binary>>.
+    {ok, <<<<<<(encode_map(Doc))/binary>> || Doc <- Data>>/binary>>}.
 
 %%%-----------------------------------------------------------------------------
 %%% INTERNAL FUNCTIONS
@@ -105,9 +115,19 @@ encode_value(V) when is_float(V) ->
 encode_value(V) when is_binary(V) ->
     {?STRING_TYPE, <<?INT32(byte_size(V) + 1), ?CSTRING(V)>>};
 encode_value(V) when is_map(V) ->
-    {?EMBDOC_TYPE, encode(V)};
+    case encode(V) of
+        {error, _Reason} = Error ->
+            Error;
+        {ok, Bson} ->
+            {?EMBDOC_TYPE, Bson}
+    end;
 encode_value(V) when is_list(V), is_tuple(hd(V)), is_binary(element(1, hd(V))) ->
-    {?EMBDOC_TYPE, encode(V)};
+    case encode(V) of
+        {error, _Reason} = Error ->
+            Error;
+        {ok, Bson} ->
+            {?EMBDOC_TYPE, Bson}
+    end;
 encode_value(V) when is_list(V) ->
     {?ARRAY_TYPE, encode_list(V)};
 encode_value({data, binary, Data}) when is_binary(Data) ->
@@ -142,7 +162,7 @@ encode_value({regex, Pattern, Options}) ->
             {?REGEX_TYPE, <<?CSTRING(PBin), ?CSTRING(OBin)>>};
         _NotUnicode ->
             {error,
-                {bson, #{
+                {nbson, #{
                     module => nbson_encoder,
                     function => encode_value,
                     cause => not_unicode_regex,
@@ -158,8 +178,13 @@ encode_value(V) when is_atom(V), V =/= min_key, V =/= max_key ->
     {?SYMBOL_TYPE, <<?INT32(byte_size(VBin) + 1), ?CSTRING(VBin)>>};
 encode_value({javascript, Scope, Code}) when is_map(Scope), is_binary(Code) ->
     CStringCode = <<?CSTRING(Code)>>,
-    Encoded = <<?INT32(byte_size(CStringCode)), CStringCode/binary, (encode(Scope))/binary>>,
-    {?JSCODEWS_TYPE, <<?INT32(byte_size(Encoded) + 4), Encoded/binary>>};
+    case encode(Scope) of
+        {error, _Reason} = Error ->
+            Error;
+        {ok, EncodedScope} ->
+            Encoded = <<?INT32(byte_size(CStringCode)), CStringCode/binary, (EncodedScope)/binary>>,
+            {?JSCODEWS_TYPE, <<?INT32(byte_size(Encoded) + 4), Encoded/binary>>}
+    end;
 encode_value(V) when is_integer(V), -16#80000000 =< V, V =< 16#7fffffff ->
     {?INT32_TYPE, <<?INT32(V)>>};
 encode_value({timestamp, Inc, Time}) ->
@@ -168,7 +193,7 @@ encode_value(V) when is_integer(V), -16#8000000000000000 =< V, V =< 16#7ffffffff
     {?INT64_TYPE, <<?INT64(V)>>};
 encode_value(V) when is_integer(V) ->
     {error,
-        {bson, #{
+        {nbson, #{
             module => nbson_encoder,
             function => encode_value,
             cause => integer_too_large,

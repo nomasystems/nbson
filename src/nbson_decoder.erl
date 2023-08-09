@@ -26,9 +26,14 @@
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
 decode(<<>>) ->
-    [];
+    {ok, []};
 decode(Bin) when is_binary(Bin) ->
-    decode(Bin, []).
+    case decode(Bin, []) of
+        {error, _Reason} = Error ->
+            Error;
+        Decoded ->
+            {ok, Decoded}
+    end.
 
 decode(<<?INT32(Size), _Rest/binary>> = Data, Acc) when byte_size(Data) >= Size ->
     case do_decode(Data) of
@@ -39,7 +44,7 @@ decode(<<?INT32(Size), _Rest/binary>> = Data, Acc) when byte_size(Data) >= Size 
     end;
 decode(Data, _Acc) ->
     {error,
-        {bson, #{
+        {nbson, #{
             cause => invalid_bson,
             function => decode,
             module => nbson_decoder,
@@ -80,8 +85,14 @@ next(<<Bin/binary>>, Current, [jscodews | Next]) ->
     document(Bin, #{}, [{jscodews, Current} | Next]);
 next(<<Bin/binary>>, Current, [{jscodews, Code} | Next]) ->
     next(Bin, {javascript, Current, Code}, Next);
-next(<<Bin/binary>>, Current, Next) ->
-    {error, next, Bin, Current, Next}.
+next(<<Bin/binary>>, _Current, _Next) ->
+    {error,
+        {nbson, #{
+            cause => invalid_bson,
+            function => next,
+            module => nbson_decoder,
+            data => Bin
+        }}}.
 
 document(<<?INT32(_Size), Bin/binary>>, Elements, Next) ->
     elist(Bin, document, Elements, Next).
