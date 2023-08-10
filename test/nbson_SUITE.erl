@@ -461,12 +461,7 @@ multi(_Config) ->
 
     {Part, _Rest} = erlang:split_binary(Encoded, byte_size(Encoded) - 100),
 
-    {error,
-        {nbson, #{
-            cause := invalid_bson, function := decode, module := nbson_decoder, data := _Data
-        }}} = nbson:decode(
-        Part
-    ),
+    {error, {invalid_bson, _Data}} = nbson:decode(Part),
     ok.
 
 proplists() ->

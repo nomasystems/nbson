@@ -73,84 +73,50 @@ decode_errors(_Config) ->
         <<0, 0, 0, 4, 97, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
 
-    {error,
-        {nbson, #{
-            cause := invalid_bson, function := decode, module := nbson_decoder, data := Data1
-        }}} = nbson:decode(
-        BaseBin1
-    ),
+    {error, {invalid_bson, Data1}} = nbson:decode(BaseBin1),
     ct:print("BaseBin1: ~p~n", [Data1]),
 
     BaseBin2 =
         <<46, 0, 0, 4, 97, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
 
-    {error,
-        {nbson, #{
-            cause := invalid_bson, function := decode, module := nbson_decoder, data := Data2
-        }}} = nbson:decode(
-        BaseBin2
-    ),
-    ct:print("BaseBin1: ~p~n", [Data2]),
+
+    {error, {invalid_bson, Data2}} = nbson:decode(BaseBin2),
+    ct:print("BaseBin2: ~p~n", [Data2]),
 
     BaseBin3 =
         <<46, 0, 0, 0, 97, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
 
-    {error,
-        {nbson, #{
-            cause := invalid_bson, function := decode, module := nbson_decoder, data := Data3
-        }}} = nbson:decode(
-        BaseBin3
-    ),
-    ct:print("BaseBin1: ~p~n", [Data3]),
+    {error, {invalid_bson, Data3}} = nbson:decode(BaseBin3),
+    ct:print("BaseBin3: ~p~n", [Data3]),
 
     BaseBin4 =
         <<46, 0, 0, 0, 4, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
 
-    {error,
-        {nbson, #{
-            cause := invalid_bson, function := decode, module := nbson_decoder, data := Data4
-        }}} = nbson:decode(
-        BaseBin4
-    ),
-    ct:print("BaseBin1: ~p~n", [Data4]),
+    {error, {invalid_bson, Data4}} = nbson:decode(BaseBin4),
+    ct:print("BaseBin4: ~p~n", [Data4]),
 
     BaseBin5 =
         <<46, 0, 0, 0, 4, 97, 114, 114, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
 
-    {error,
-        {nbson, #{
-            cause := invalid_bson, function := decode, module := nbson_decoder, data := Data5
-        }}} = nbson:decode(
-        BaseBin5
-    ),
-    ct:print("BaseBin1: ~p~n", [Data5]),
+    {error, {invalid_bson, Data5}} = nbson:decode(BaseBin5),
+    ct:print("BaseBin5: ~p~n", [Data5]),
 
     BaseBin6 =
         <<46, 0, 0, 0, 4, 97, 114, 114, 0, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
 
-    {error,
-        {nbson, #{
-            cause := invalid_bson, function := decode, module := nbson_decoder, data := Data6
-        }}} = nbson:decode(
-        BaseBin6
-    ),
-    ct:print("BaseBin1: ~p~n", [Data6]),
+    {error, {invalid_bson, Data6}} = nbson:decode(BaseBin6),
+    ct:print("BaseBin6: ~p~n", [Data6]),
 
     BaseBin7 =
         <<46, 0, 0, 0, 4, 97, 114, 114, 0, 36, 0, 0, 0>>,
 
-    {error,
-        {nbson, #{
-            cause := invalid_bson, function := decode, module := nbson_decoder, data := Data7
-        }}} = nbson:decode(
-        BaseBin7
-    ),
-    ct:print("BaseBin1: ~p~n", [Data7]),
+    {error, {invalid_bson, Data7}} = nbson:decode(BaseBin7),
+    ct:print("BaseBin7: ~p~n", [Data7]),
 
     ok.
 
@@ -158,8 +124,8 @@ encode_errors() ->
     [{userdata, [{doc, "Tests errors on BSON encoder API."}]}].
 encode_errors(_Config) ->
     BaseMap = #{<<"int64">> => (16#7fffffffffffffff + 1)},
-    {error, _ReasonMap} = nbson:encode(BaseMap),
+    {error, {integer_too_large, V}} = nbson:encode(BaseMap),
 
     BasePL = [{<<"int64">>, (16#7fffffffffffffff + 1)}],
-    {error, _ReasonPL} = nbson:encode(BasePL),
+    {error, {integer_too_large, V}} = nbson:encode(BasePL),
     ok.

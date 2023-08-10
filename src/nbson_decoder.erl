@@ -43,20 +43,14 @@ decode(<<?INT32(Size), _Rest/binary>> = Data, Acc) when byte_size(Data) >= Size 
             decode(Rest, [Doc | Acc])
     end;
 decode(Data, _Acc) ->
-    {error,
-        {nbson, #{
-            cause => invalid_bson,
-            function => decode,
-            module => nbson_decoder,
-            data => Data
-        }}}.
-
-do_decode(Bson) ->
-    document(Bson, #{}, [document]).
+    {error, {invalid_bson, Data}}.
 
 %%%-----------------------------------------------------------------------------
 %%% INTERNAL FUNCTIONS
 %%%-----------------------------------------------------------------------------
+do_decode(Bson) ->
+    document(Bson, #{}, [document]).
+
 next(<<Bin/binary>>, Current, []) ->
     {Current, Bin};
 next(<<Bin/binary>>, Current, [document]) ->
@@ -86,13 +80,7 @@ next(<<Bin/binary>>, Current, [jscodews | Next]) ->
 next(<<Bin/binary>>, Current, [{jscodews, Code} | Next]) ->
     next(Bin, {javascript, Current, Code}, Next);
 next(<<Bin/binary>>, _Current, _Next) ->
-    {error,
-        {nbson, #{
-            cause => invalid_bson,
-            function => next,
-            module => nbson_decoder,
-            data => Bin
-        }}}.
+    {error, {invalid_bson, Bin}}.
 
 document(<<?INT32(_Size), Bin/binary>>, Elements, Next) ->
     elist(Bin, document, Elements, Next).

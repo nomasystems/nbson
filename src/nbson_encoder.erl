@@ -161,13 +161,7 @@ encode_value({regex, Pattern, Options}) ->
         {PBin, OBin} when is_binary(PBin) andalso is_binary(OBin) ->
             {?REGEX_TYPE, <<?CSTRING(PBin), ?CSTRING(OBin)>>};
         _NotUnicode ->
-            {error,
-                {nbson, #{
-                    module => nbson_encoder,
-                    function => encode_value,
-                    cause => not_unicode_regex,
-                    data => {Pattern, Options}
-                }}}
+            {error, {not_unicode_regex, {Pattern, Options}}}
     end;
 encode_value({pointer, Collection, <<_:96>> = Id}) ->
     {?DBPOINTER_TYPE, <<?INT32(byte_size(Collection) + 1), ?CSTRING(Collection), Id/binary>>};
@@ -192,13 +186,7 @@ encode_value({timestamp, Inc, Time}) ->
 encode_value(V) when is_integer(V), -16#8000000000000000 =< V, V =< 16#7fffffffffffffff ->
     {?INT64_TYPE, <<?INT64(V)>>};
 encode_value(V) when is_integer(V) ->
-    {error,
-        {nbson, #{
-            module => nbson_encoder,
-            function => encode_value,
-            cause => integer_too_large,
-            data => V
-        }}};
+    {error, {integer_too_large, V}};
 encode_value(max_key) ->
     {?MAXKEY_TYPE, <<>>};
 encode_value(min_key) ->
