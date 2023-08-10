@@ -80,7 +80,6 @@ decode_errors(_Config) ->
         <<46, 0, 0, 4, 97, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
 
-
     {error, {invalid_bson, Data2}} = nbson:decode(BaseBin2),
     ct:print("BaseBin2: ~p~n", [Data2]),
 
