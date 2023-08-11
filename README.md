@@ -47,7 +47,7 @@ The following table represents the association between Erlang types and BSON typ
 | `I32 :: integer() when -16#80000000 =< I32, I32 =< 16#7fffffff` | 32-bit integer (16) |
 | `{timestamp, binary(), binary()}` | Timestamp (17) |
 | `I64 :: integer() when -16#80000000 =< I64, I64 =< 16#7fffffff` | 64-bit integer (18) |
-| `max_type` | Max key (127) |
+| `max_key` | Max key (127) |
 | `min_key` | Min key (-1) |
 
 On deserialization, we prevent the dynamic generation of atoms by converting BSON Symbol, Max Key and Min Key values to Erlang binaries.

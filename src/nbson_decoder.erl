@@ -26,9 +26,14 @@
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
 decode(<<>>) ->
-    [];
+    {ok, []};
 decode(Bin) when is_binary(Bin) ->
-    decode(Bin, []).
+    case decode(Bin, []) of
+        {error, _Reason} = Error ->
+            Error;
+        Decoded ->
+            {ok, Decoded}
+    end.
 
 decode(<<?INT32(Size), _Rest/binary>> = Data, Acc) when byte_size(Data) >= Size ->
     case do_decode(Data) of
@@ -38,20 +43,14 @@ decode(<<?INT32(Size), _Rest/binary>> = Data, Acc) when byte_size(Data) >= Size 
             decode(Rest, [Doc | Acc])
     end;
 decode(Data, _Acc) ->
-    erlang:throw(
-        {badarg, Data, [
-            {error_info, #{
-                module => nbson_decoder, function => decode, cause => invalid_bson
-            }}
-        ]}
-    ).
-
-do_decode(Bson) ->
-    document(Bson, #{}, [document]).
+    {error, {invalid_bson, Data}}.
 
 %%%-----------------------------------------------------------------------------
 %%% INTERNAL FUNCTIONS
 %%%-----------------------------------------------------------------------------
+do_decode(Bson) ->
+    document(Bson, #{}, [document]).
+
 next(<<Bin/binary>>, Current, []) ->
     {Current, Bin};
 next(<<Bin/binary>>, Current, [document]) ->
@@ -80,8 +79,8 @@ next(<<Bin/binary>>, Current, [jscodews | Next]) ->
     document(Bin, #{}, [{jscodews, Current} | Next]);
 next(<<Bin/binary>>, Current, [{jscodews, Code} | Next]) ->
     next(Bin, {javascript, Current, Code}, Next);
-next(<<Bin/binary>>, Current, Next) ->
-    {error, next, Bin, Current, Next}.
+next(<<Bin/binary>>, _Current, _Next) ->
+    {error, {invalid_bson, Bin}}.
 
 document(<<?INT32(_Size), Bin/binary>>, Elements, Next) ->
     elist(Bin, document, Elements, Next).

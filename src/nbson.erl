@@ -35,13 +35,14 @@
 %%%-----------------------------------------------------------------------------
 -spec encode(Data) -> Result when
     Data :: undefined | document() | [document()],
-    Result :: binary() | [binary()].
+    Result :: {ok, BSON} | {error, term()},
+    BSON :: binary() | [binary()].
 encode(Data) ->
     nbson_encoder:encode(Data).
 
 -spec decode(Data) -> Result when
     Data :: binary(),
-    Result :: [document()].
+    Result :: {ok, [document()]} | {error, term()}.
 decode(Data) ->
     nbson_decoder:decode(Data).
 
