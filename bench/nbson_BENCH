@@ -60,8 +60,8 @@ measure_encode(Bin, DocCount) ->
                         Map;
                     List when is_list(List) ->
                         List;
-                    {List, _Rest} ->
-                        List
+                    {ok, Docs} ->
+                        Docs
                 end,
     {BsonErlangDocs, _Rest2} = get_docs(Bin, []),
 
