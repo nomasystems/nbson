@@ -15,6 +15,7 @@
 %% https://github.com/sile/jsone/blob/master/src/jsone_decode.erl
 
 -module(nbson_decoder).
+%-compile([bin_opt_info]).
 
 %%% INCLUDE FILES
 -include("nbson_bson_types.hrl").
@@ -28,33 +29,36 @@
 decode(<<>>) ->
     {ok, []};
 decode(Bin) when is_binary(Bin) ->
-    case decode(Bin, []) of
+    case decode_docs(Bin, []) of
         {error, _Reason} = Error ->
             Error;
         Decoded ->
             {ok, Decoded}
     end.
 
-decode(<<?INT32(Size), _Rest/binary>> = Data, Acc) when byte_size(Data) >= Size ->
-    case do_decode(Data) of
-        {Doc, <<>>} ->
-            lists:reverse([Doc | Acc]);
-        {Doc, Rest} ->
-            decode(Rest, [Doc | Acc])
-    end;
-decode(Data, _Acc) ->
-    {error, {invalid_bson, Data}}.
+decode_docs(<<>>, Acc) ->
+    lists:reverse(Acc);
+decode_docs(<<?INT32(Size), _Rest/binary>> = Data, Acc) ->
+    decode_docs(Data, Size, Acc).
+
+decode_docs(<<Bin/binary>>, Size, Acc) ->
+    case Bin of
+        <<Next:Size/binary, Rest/binary>> -> 
+            case document(Next, #{}, [document]) of
+                {error, _Reason} = Error ->
+                    Error;
+                Document ->
+                    decode_docs(Rest, [Document | Acc])
+            end;
+        _Other -> 
+            {error, {invalid_bson, lists:reverse(Acc)}}
+    end.
 
 %%%-----------------------------------------------------------------------------
 %%% INTERNAL FUNCTIONS
 %%%-----------------------------------------------------------------------------
-do_decode(Bson) ->
-    document(Bson, #{}, [document]).
-
-next(<<Bin/binary>>, Current, []) ->
-    {Current, Bin};
-next(<<Bin/binary>>, Current, [document]) ->
-    {Current, Bin};
+next(<<>>, Current, [document]) ->
+    Current;
 next(<<Bin/binary>>, Current, [{evalue, Type, document, Elements} | Next]) ->
     evalue(Bin, Type, [{elist, Current, Elements} | Next]);
 next(<<Bin/binary>>, _Current, [{evalue, Type, array, Elements} | Next]) ->
@@ -79,8 +83,8 @@ next(<<Bin/binary>>, Current, [jscodews | Next]) ->
     document(Bin, #{}, [{jscodews, Current} | Next]);
 next(<<Bin/binary>>, Current, [{jscodews, Code} | Next]) ->
     next(Bin, {javascript, Current, Code}, Next);
-next(<<Bin/binary>>, _Current, _Next) ->
-    {error, {invalid_bson, Bin}}.
+next(<<_Bin/binary>>, Current, _Next) ->
+    {error, {invalid_bson, Current}}.
 
 document(<<?INT32(_Size), Bin/binary>>, Elements, Next) ->
     elist(Bin, document, Elements, Next).

@@ -89,8 +89,8 @@ bench_decode(Path, Times) ->
     io:format("~20.. s  ~20.. B  ~20.. B  ~20.. B~n",
               [DocCount,
                byte_size(Bin),
-               round(NbsonTimeDecode/Times),
-               round(BsonErlangTimeDecode/Times)]).
+               NbsonTimeDecode,
+               BsonErlangTimeDecode]).
 
   
 bench_encode(Path, Times) ->
@@ -111,8 +111,8 @@ bench_encode(Path, Times) ->
     io:format("~20.. s  ~20.. B  ~20.. B  ~20.. B~n",
               [DocCount,
                byte_size(Bin),
-               round(NbsonTimeEncode/Times),
-               round(BsonErlangTimeEncode/Times)]).
+               NbsonTimeEncode,
+               BsonErlangTimeEncode]).
 
 
 % get_docs implementation extracted from https://github.com/comtihon/mongodb-erlang/blob/56c700f791601a201a9d5af7cad45b3c81258209/src/connection/mongo_protocol.erl#L113
