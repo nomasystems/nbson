@@ -12,7 +12,7 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 -module(nbson_decoder).
--compile([{inline, [evalue/3]}]).
+-compile([{inline, [elist/4, evalue/3, subtype_decode/1]}]).
 %-compile([bin_opt_info]).
 
 %%% INCLUDE FILES
@@ -20,6 +20,10 @@
 
 %%% EXTERNAL EXPORTS
 -export([decode/1]).
+
+%%% MACROS
+-define(EDOCUMENT, 0).
+-define(EARRAY, 1).
 
 %%%-----------------------------------------------------------------------------
 %%% EXTERNAL EXPORTS
@@ -57,14 +61,14 @@ decode_docs(<<Bin/binary>>, Size, Acc) ->
 %%%-----------------------------------------------------------------------------
 next(<<>>, Current, [document]) ->
     Current;
-next(<<Bin/binary>>, Current, [{evalue, Type, document, Elements} | Next]) ->
+next(<<Bin/binary>>, Current, [{evalue, Type, ?EDOCUMENT, Elements} | Next]) ->
     evalue(Bin, Type, [{elist, Current, Elements} | Next]);
-next(<<Bin/binary>>, _Current, [{evalue, Type, array, Elements} | Next]) ->
+next(<<Bin/binary>>, _Current, [{evalue, Type, ?EARRAY, Elements} | Next]) ->
     evalue(Bin, Type, [{array, Elements} | Next]);
 next(<<Bin/binary>>, Current, [{elist, Name, Elements} | Next]) ->
-    elist(Bin, document, maps:put(Name, Current, Elements), Next);
+    elist(Bin, ?EDOCUMENT, maps:put(Name, Current, Elements), Next);
 next(<<Bin/binary>>, Current, [{array, Elements} | Next]) ->
-    elist(Bin, array, [Current | Elements], Next);
+    elist(Bin, ?EARRAY, [Current | Elements], Next);
 next(<<Bin/binary>>, Current, [regex | Next]) ->
     cstring(Bin, [{regex_opts, Current} | Next]);
 next(<<Bin/binary>>, Current, [{regex_opts, Regex} | Next]) ->
@@ -85,14 +89,15 @@ next(<<_Bin/binary>>, Current, _Next) ->
     {error, {invalid_bson, Current}}.
 
 document(<<?INT32(_Size), Bin/binary>>, Elements, Next) ->
-    elist(Bin, document, Elements, Next).
+    elist(Bin, ?EDOCUMENT, Elements, Next).
 
-elist(<<0, Bin/binary>>, document, Map, Next) when is_map(Map), map_size(Map) == 0 ->
-    next(Bin, #{}, Next);
-elist(<<0, Bin/binary>>, array, Elements, Next) ->
-    next(Bin, lists:reverse(Elements), Next);
-elist(<<0, Bin/binary>>, document, Elements, Next) ->
-    next(Bin, Elements, Next);
+elist(<<0, Bin/binary>>, Type, Elements, Next) ->
+    case Type of
+        ?EARRAY ->
+            next(Bin, lists:reverse(Elements), Next);
+        ?EDOCUMENT ->
+            next(Bin, Elements, Next)
+    end;
 elist(<<Bin/binary>>, Kind, Elements, Next) ->
     elem(Bin, Kind, Elements, Next).
 
@@ -161,7 +166,7 @@ evalue(<<Bin/binary>>, Type, Next) ->
 array(<<0, Bin/binary>>, Elements, Next) ->
     next(Bin, Elements, Next);
 array(<<Bin/binary>>, Elements, Next) ->
-    elem(Bin, array, Elements, Next).
+    elem(Bin, ?EARRAY, Elements, Next).
 
 pointer(<<?BITS96(Id), Bin/binary>>, Next) ->
     next(Bin, Id, Next).
