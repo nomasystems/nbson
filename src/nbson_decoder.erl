@@ -11,10 +11,8 @@
 %% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
-%%% Based on jsone CPS style, see
-%% https://github.com/sile/jsone/blob/master/src/jsone_decode.erl
-
 -module(nbson_decoder).
+-compile([{inline, [evalue/3]}]).
 %-compile([bin_opt_info]).
 
 %%% INCLUDE FILES
@@ -101,47 +99,64 @@ elist(<<Bin/binary>>, Kind, Elements, Next) ->
 elem(<<?INT8(Type), Bin/binary>>, Kind, Elements, Next) ->
     cstring(Bin, [{evalue, Type, Kind, Elements} | Next]).
 
-evalue(<<?DOUBLE(D), Bin/binary>>, ?DOUBLE_TYPE, Next) ->
-    next(Bin, D, Next);
-evalue(<<?INT32(L), Bin/binary>>, ?STRING_TYPE, Next) ->
-    string(Bin, L - 1, Next);
-evalue(<<Bin/binary>>, ?EMBDOC_TYPE, Next) ->
-    document(Bin, #{}, Next);
-evalue(<<?INT32(_L), Bin/binary>>, ?ARRAY_TYPE, Next) ->
-    array(Bin, [], Next);
-evalue(<<?INT32(Size), ?INT8(SubType), Bin/binary>>, ?BIN_TYPE, Next) ->
-    binary(Bin, Size, SubType, Next);
-evalue(<<Bin/binary>>, ?UNDEF_TYPE, Next) ->
-    next(Bin, undefined, Next);
-evalue(<<?BITS96(V), Bin/binary>>, ?OBJID_TYPE, Next) ->
-    next(Bin, {object_id, V}, Next);
-evalue(<<?INT8(V), Bin/binary>>, ?BOOLEAN_TYPE, Next) ->
-    next(Bin, V /= 0, Next);
-evalue(<<?INT64(V), Bin/binary>>, ?DATETIME_TYPE, Next) ->
-    DateTime = {V div 1000000000, (V div 1000) rem 1000000, (V * 1000) rem 1000000},
-    next(Bin, DateTime, Next);
-evalue(<<Bin/binary>>, ?NULL_TYPE, Next) ->
-    next(Bin, null, Next);
-evalue(<<Bin/binary>>, ?REGEX_TYPE, Next) ->
-    cstring(Bin, [regex | Next]);
-evalue(<<?INT32(L), Bin/binary>>, ?DBPOINTER_TYPE, Next) ->
-    string(Bin, L - 1, [db_pointer | Next]);
-evalue(<<?INT32(L), Bin/binary>>, ?JSCODE_TYPE, Next) ->
-    string(Bin, L - 1, [jscode | Next]);
-evalue(<<?INT32(L), Bin/binary>>, ?SYMBOL_TYPE, Next) ->
-    string(Bin, L - 1, [label | Next]);
-evalue(<<?INT32(_L), ?INT32(LCode), Bin/binary>>, ?JSCODEWS_TYPE, Next) ->
-    string(Bin, LCode - 1, [jscodews | Next]);
-evalue(<<?INT32(I), Bin/binary>>, ?INT32_TYPE, Next) ->
-    next(Bin, I, Next);
-evalue(<<?INT32(Inc), ?INT32(Time), Bin/binary>>, ?TIMESTAMP_TYPE, Next) ->
-    next(Bin, {timestamp, Inc, Time}, Next);
-evalue(<<?INT64(I), Bin/binary>>, ?INT64_TYPE, Next) ->
-    next(Bin, I, Next);
-evalue(<<Bin/binary>>, ?MAXKEY_TYPE, Next) ->
-    next(Bin, max_key, Next);
-evalue(<<Bin/binary>>, ?MINKEY_TYPE, Next) ->
-    next(Bin, min_key, Next).
+evalue(<<Bin/binary>>, Type, Next) ->
+    case Type of
+        ?DOUBLE_TYPE ->
+            <<?DOUBLE(D), Rest/binary>> = Bin,
+            next(Rest, D, Next);
+        ?STRING_TYPE ->
+            <<?INT32(L), Rest/binary>> = Bin,
+            string(Rest, L - 1, Next);
+        ?EMBDOC_TYPE ->
+            document(Bin, #{}, Next);
+        ?ARRAY_TYPE ->
+            <<?INT32(_L), Rest/binary>> = Bin,
+            array(Rest, [], Next);
+        ?BIN_TYPE ->
+            <<?INT32(Size), ?INT8(SubType), Rest/binary>> = Bin,
+            binary(Rest, Size, SubType, Next);
+        ?UNDEF_TYPE ->
+            next(Bin, undefined, Next);
+        ?OBJID_TYPE ->
+            <<?BITS96(V), Rest/binary>> = Bin,
+            next(Rest, {object_id, V}, Next);
+        ?BOOLEAN_TYPE ->
+            <<?INT8(V), Rest/binary>> = Bin,
+            next(Rest, V /= 0, Next);
+        ?DATETIME_TYPE ->
+            <<?INT64(V), Rest/binary>> = Bin, 
+            DateTime = {V div 1000000000, (V div 1000) rem 1000000, (V * 1000) rem 1000000},
+            next(Rest, DateTime, Next);
+        ?NULL_TYPE ->
+            next(Bin, null, Next);
+        ?REGEX_TYPE ->
+            cstring(Bin, [regex | Next]);
+        ?DBPOINTER_TYPE ->
+            <<?INT32(L), Rest/binary>> = Bin,
+            string(Rest, L - 1, [db_pointer | Next]);
+        ?JSCODE_TYPE ->
+            <<?INT32(L), Rest/binary>> = Bin,
+            string(Rest, L - 1, [jscode | Next]);
+        ?SYMBOL_TYPE ->
+            <<?INT32(L), Rest/binary>> = Bin,
+            string(Rest, L - 1, [label | Next]);
+        ?JSCODEWS_TYPE ->
+            <<?INT32(_L), ?INT32(LCode), Rest/binary>> = Bin,
+            string(Rest, LCode - 1, [jscodews | Next]);
+        ?INT32_TYPE ->
+            <<?INT32(I), Rest/binary>> = Bin,
+            next(Rest, I, Next);
+        ?TIMESTAMP_TYPE ->
+            <<?INT32(Inc), ?INT32(Time), Rest/binary>> = Bin,
+            next(Rest, {timestamp, Inc, Time}, Next);
+        ?INT64_TYPE ->
+            <<?INT64(I), Rest/binary>> = Bin,
+            next(Rest, I, Next);
+        ?MAXKEY_TYPE ->
+            next(Bin, max_key, Next);
+        ?MINKEY_TYPE ->
+            next(Bin, min_key, Next)
+    end.
 
 array(<<0, Bin/binary>>, Elements, Next) ->
     next(Bin, Elements, Next);
