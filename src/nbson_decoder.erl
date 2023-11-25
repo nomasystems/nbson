@@ -28,6 +28,9 @@
 %%%-----------------------------------------------------------------------------
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
+-spec decode(Data) -> Result when
+    Data :: binary(),
+    Result :: {ok, [nbson:document()]} | {error, term()}.
 decode(<<>>) ->
     {ok, []};
 decode(Bin) when is_binary(Bin) ->
@@ -38,27 +41,41 @@ decode(Bin) when is_binary(Bin) ->
             {ok, Decoded}
     end.
 
+-spec decode_docs(Data, Acc) -> Result when
+    Data :: binary(),
+    Acc :: [nbson:document()],
+    Result :: [nbson:document()] | {error, term()}.
 decode_docs(<<>>, Acc) ->
     lists:reverse(Acc);
 decode_docs(<<?INT32(Size), _Rest/binary>> = Data, Acc) ->
     decode_docs(Data, Size, Acc).
 
+-spec decode_docs(Data, Size, Acc) -> Result when
+    Data :: binary(),
+    Size :: integer(),
+    Acc :: [nbson:document()],
+    Result :: [nbson:document()] | {error, term()}.
 decode_docs(<<Bin/binary>>, Size, Acc) ->
     case Bin of
-        <<Next:Size/binary, Rest/binary>> -> 
+        <<Next:Size/binary, Rest/binary>> ->
             case document(Next, #{}, [document]) of
                 {error, _Reason} = Error ->
                     Error;
                 Document ->
                     decode_docs(Rest, [Document | Acc])
             end;
-        _Other -> 
+        _Other ->
             {error, {invalid_bson, lists:reverse(Acc)}}
     end.
 
 %%%-----------------------------------------------------------------------------
 %%% INTERNAL FUNCTIONS
 %%%-----------------------------------------------------------------------------
+-spec next(Data, Current, Next) -> Result when
+    Data :: binary(),
+    Current :: term(),
+    Next :: [term()],
+    Result :: nbson:document() | {error, term()}.
 next(<<>>, Current, [document]) ->
     Current;
 next(<<Bin/binary>>, Current, [{evalue, Type, ?EDOCUMENT, Elements} | Next]) ->
@@ -88,12 +105,45 @@ next(<<Bin/binary>>, Current, [{jscodews, Code} | Next]) ->
 next(<<_Bin/binary>>, Current, _Next) ->
     {error, {invalid_bson, Current}}.
 
+-spec document(Data, Elements, Next) -> Result when
+    Data :: binary(),
+    Elements :: map(),
+    Next :: [term()],
+    Result :: nbson:document() | {error, term()}.
 document(<<?INT32(_Size), Bin/binary>>, Elements, Next) ->
     elist(Bin, ?EDOCUMENT, Elements, Next).
 
+-spec elist(Data, Type, Elements, Next) -> Result when
+    Data :: binary(),
+    Type ::
+        ?EARRAY
+        | ?EDOCUMENT
+        | ?DOUBLE_TYPE
+        | ?STRING_TYPE
+        | ?EMBDOC_TYPE
+        | ?ARRAY_TYPE
+        | ?BIN_TYPE
+        | ?UNDEF_TYPE
+        | ?OBJID_TYPE
+        | ?BOOLEAN_TYPE
+        | ?DATETIME_TYPE
+        | ?NULL_TYPE
+        | ?REGEX_TYPE
+        | ?DBPOINTER_TYPE
+        | ?JSCODE_TYPE
+        | ?SYMBOL_TYPE
+        | ?JSCODEWS_TYPE
+        | ?INT32_TYPE
+        | ?TIMESTAMP_TYPE
+        | ?INT64_TYPE
+        | ?MAXKEY_TYPE
+        | ?MINKEY_TYPE,
+    Elements :: map() | [term()],
+    Next :: [term()],
+    Result :: nbson:document() | {error, term()}.
 elist(<<0, Bin/binary>>, Type, Elements, Next) ->
     case Type of
-        ?EARRAY ->
+        ?EARRAY when is_list(Elements) ->
             next(Bin, lists:reverse(Elements), Next);
         ?EDOCUMENT ->
             next(Bin, Elements, Next)
@@ -129,7 +179,7 @@ evalue(<<Bin/binary>>, Type, Next) ->
             <<?INT8(V), Rest/binary>> = Bin,
             next(Rest, V /= 0, Next);
         ?DATETIME_TYPE ->
-            <<?INT64(V), Rest/binary>> = Bin, 
+            <<?INT64(V), Rest/binary>> = Bin,
             DateTime = {V div 1000000000, (V div 1000) rem 1000000, (V * 1000) rem 1000000},
             next(Rest, DateTime, Next);
         ?NULL_TYPE ->
@@ -188,6 +238,10 @@ binary(<<Base/binary>>, Size, SubType, Next) ->
     <<Part:Size/binary, Bin/binary>> = Base,
     next(Bin, {data, subtype_decode(SubType), Part}, Next).
 
+-spec subtype_decode(SubTypeInt) -> SubType when
+    SubTypeInt :: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 128,
+    SubType ::
+        binary | function | binary_old | uuid_old | uuid | md5 | encrypted | compressed | user.
 subtype_decode(0) ->
     binary;
 subtype_decode(1) ->
