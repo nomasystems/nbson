@@ -25,6 +25,30 @@
 -define(EDOCUMENT, 0).
 -define(EARRAY, 1).
 
+%%% TYPES
+-type kind() ::
+    ?DOUBLE_TYPE
+    | ?STRING_TYPE
+    | ?EMBDOC_TYPE
+    | ?ARRAY_TYPE
+    | ?BIN_TYPE
+    | ?UNDEF_TYPE
+    | ?OBJID_TYPE
+    | ?BOOLEAN_TYPE
+    | ?DATETIME_TYPE
+    | ?NULL_TYPE
+    | ?REGEX_TYPE
+    | ?DBPOINTER_TYPE
+    | ?JSCODE_TYPE
+    | ?SYMBOL_TYPE
+    | ?JSCODEWS_TYPE
+    | ?INT32_TYPE
+    | ?TIMESTAMP_TYPE
+    | ?INT64_TYPE
+    | ?MAXKEY_TYPE
+    | ?MINKEY_TYPE.
+-type type() :: ?EDOCUMENT | ?EARRAY | kind().
+-type subtype() :: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 128.
 %%%-----------------------------------------------------------------------------
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
@@ -115,29 +139,7 @@ document(<<?INT32(_Size), Bin/binary>>, Elements, Next) ->
 
 -spec elist(Data, Type, Elements, Next) -> Result when
     Data :: binary(),
-    Type ::
-        ?EARRAY
-        | ?EDOCUMENT
-        | ?DOUBLE_TYPE
-        | ?STRING_TYPE
-        | ?EMBDOC_TYPE
-        | ?ARRAY_TYPE
-        | ?BIN_TYPE
-        | ?UNDEF_TYPE
-        | ?OBJID_TYPE
-        | ?BOOLEAN_TYPE
-        | ?DATETIME_TYPE
-        | ?NULL_TYPE
-        | ?REGEX_TYPE
-        | ?DBPOINTER_TYPE
-        | ?JSCODE_TYPE
-        | ?SYMBOL_TYPE
-        | ?JSCODEWS_TYPE
-        | ?INT32_TYPE
-        | ?TIMESTAMP_TYPE
-        | ?INT64_TYPE
-        | ?MAXKEY_TYPE
-        | ?MINKEY_TYPE,
+    Type :: type(),
     Elements :: map() | [term()],
     Next :: [term()],
     Result :: nbson:document() | {error, term()}.
@@ -151,9 +153,20 @@ elist(<<0, Bin/binary>>, Type, Elements, Next) ->
 elist(<<Bin/binary>>, Kind, Elements, Next) ->
     elem(Bin, Kind, Elements, Next).
 
+-spec elem(Data, Kind, Elements, Next) -> Result when
+    Data :: binary(),
+    Kind :: kind(),
+    Elements :: map() | [term()],
+    Next :: [term()],
+    Result :: nbson:document() | {error, term()}.
 elem(<<?INT8(Type), Bin/binary>>, Kind, Elements, Next) ->
     cstring(Bin, [{evalue, Type, Kind, Elements} | Next]).
 
+-spec evalue(Data, Kind, Next) -> Result when
+    Data :: binary(),
+    Kind :: kind(),
+    Next :: [term()],
+    Result :: nbson:document() | {error, term()}.
 evalue(<<Bin/binary>>, Type, Next) ->
     case Type of
         ?DOUBLE_TYPE ->
@@ -213,6 +226,11 @@ evalue(<<Bin/binary>>, Type, Next) ->
             next(Bin, min_key, Next)
     end.
 
+-spec array(Data, Elements, Next) -> Result when
+    Data :: binary(),
+    Elements :: map() | [term()],
+    Next :: [term()],
+    Result :: nbson:document() | {error, term()}.
 array(<<0, Bin/binary>>, Elements, Next) ->
     next(Bin, Elements, Next);
 array(<<Bin/binary>>, Elements, Next) ->
@@ -221,25 +239,44 @@ array(<<Bin/binary>>, Elements, Next) ->
 pointer(<<?BITS96(Id), Bin/binary>>, Next) ->
     next(Bin, Id, Next).
 
+-spec cstring(Data, Next) -> Result when
+    Data :: binary(),
+    Next :: [term()],
+    Result :: nbson:document() | {error, term()}.
 cstring(<<Bin/binary>>, Next) ->
     Len = cstring_len(Bin, 0),
     string(Bin, Len, Next).
 
+-spec cstring_len(Data, Len) -> Result when
+    Data :: binary(),
+    Len :: non_neg_integer(),
+    Result :: non_neg_integer().
 cstring_len(<<?NULL, _Rest/binary>>, Len) ->
     Len;
 cstring_len(<<_C, Rest/binary>>, Len) ->
     cstring_len(Rest, Len + 1).
 
+-spec string(Data, Len, Next) -> Result when
+    Data :: binary(),
+    Len :: integer(),
+    Next :: [term()],
+    Result :: nbson:document() | {error, term()}.
 string(Base, Len, Next) ->
     <<String:Len/binary, ?NULL, Bin/binary>> = Base,
     next(Bin, String, Next).
 
+-spec binary(Data, Size, SubType, Next) -> Result when
+    Data :: binary(),
+    Size :: non_neg_integer(),
+    SubType :: subtype(),
+    Next :: [term()],
+    Result :: non_neg_integer().
 binary(<<Base/binary>>, Size, SubType, Next) ->
     <<Part:Size/binary, Bin/binary>> = Base,
     next(Bin, {data, subtype_decode(SubType), Part}, Next).
 
 -spec subtype_decode(SubTypeInt) -> SubType when
-    SubTypeInt :: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 128,
+    SubTypeInt :: subtype(),
     SubType ::
         binary | function | binary_old | uuid_old | uuid | md5 | encrypted | compressed | user.
 subtype_decode(0) ->
