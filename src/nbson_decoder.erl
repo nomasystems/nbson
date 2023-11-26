@@ -49,7 +49,6 @@
     | ?MAXKEY_TYPE
     | ?MINKEY_TYPE.
 
--type subtype() :: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 128.
 %%%-----------------------------------------------------------------------------
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
@@ -103,29 +102,29 @@ decode_docs(<<Bin/binary>>, Size, Acc) ->
     Result :: nbson:document() | {error, term()}.
 next(<<>>, Current, [document]) ->
     Current;
-next(<<Bin/binary>>, Current, [{evalue, Type, ?EDOCUMENT, Elements} | Next]) ->
-    evalue(Bin, Type, [{elist, Current, Elements} | Next]);
-next(<<Bin/binary>>, _Current, [{evalue, Type, ?EARRAY, Elements} | Next]) ->
-    evalue(Bin, Type, [{array, Elements} | Next]);
-next(<<Bin/binary>>, Current, [{elist, Name, Elements} | Next]) ->
+next(<<Bin/binary>>, Current, [evalue, Type, ?EDOCUMENT, Elements | Next]) ->
+    evalue(Bin, Type, [elist, Current, Elements | Next]);
+next(<<Bin/binary>>, _Current, [evalue, Type, ?EARRAY, Elements | Next]) ->
+    evalue(Bin, Type, [array, Elements | Next]);
+next(<<Bin/binary>>, Current, [elist, Name, Elements | Next]) ->
     elist(Bin, ?EDOCUMENT, maps:put(Name, Current, Elements), Next);
-next(<<Bin/binary>>, Current, [{array, Elements} | Next]) ->
+next(<<Bin/binary>>, Current, [array, Elements | Next]) ->
     elist(Bin, ?EARRAY, [Current | Elements], Next);
 next(<<Bin/binary>>, Current, [regex | Next]) ->
-    cstring(Bin, [{regex_opts, Current} | Next]);
-next(<<Bin/binary>>, Current, [{regex_opts, Regex} | Next]) ->
+    cstring(Bin, [regex_opts, Current | Next]);
+next(<<Bin/binary>>, Current, [regex_opts, Regex | Next]) ->
     next(Bin, {regex, Regex, Current}, Next);
 next(<<Bin/binary>>, Current, [db_pointer | Next]) ->
-    pointer(Bin, [{pointer, Current} | Next]);
-next(<<Bin/binary>>, Current, [{pointer, Collection} | Next]) ->
+    pointer(Bin, [pointer, Current | Next]);
+next(<<Bin/binary>>, Current, [pointer, Collection | Next]) ->
     next(Bin, {pointer, Collection, Current}, Next);
 next(<<Bin/binary>>, Current, [jscode | Next]) ->
     next(Bin, {javascript, #{}, Current}, Next);
 next(<<Bin/binary>>, Current, [label | Next]) ->
     next(Bin, binary_to_atom(Current, utf8), Next);
 next(<<Bin/binary>>, Current, [jscodews | Next]) ->
-    document(Bin, #{}, [{jscodews, Current} | Next]);
-next(<<Bin/binary>>, Current, [{jscodews, Code} | Next]) ->
+    document(Bin, #{}, [javascript, Current | Next]);
+next(<<Bin/binary>>, Current, [javascript, Code | Next]) ->
     next(Bin, {javascript, Current, Code}, Next);
 next(<<_Bin/binary>>, Current, _Next) ->
     {error, {invalid_bson, Current}}.
@@ -161,7 +160,7 @@ elist(<<Bin/binary>>, Context, Elements, Next) ->
     Next :: [term()],
     Result :: nbson:document() | {error, term()}.
 elem(<<?INT8(Type), Bin/binary>>, Context, Elements, Next) ->
-    cstring(Bin, [{evalue, Type, Context, Elements} | Next]).
+    cstring(Bin, [evalue, Type, Context, Elements | Next]).
 
 -spec evalue(Data, Kind, Next) -> Result when
     Data :: binary(),
@@ -269,15 +268,20 @@ string(Base, Len, Next) ->
 -spec binary(Data, Size, SubType, Next) -> Result when
     Data :: binary(),
     Size :: integer(),
-    SubType :: subtype(),
+    SubType :: non_neg_integer(),
     Next :: [term()],
     Result :: nbson:document() | {error, term()}.
 binary(<<Base/binary>>, Size, SubType, Next) ->
     <<Part:Size/binary, Bin/binary>> = Base,
-    next(Bin, {data, subtype_decode(SubType), Part}, Next).
+    case subtype_decode(SubType) of
+        {error, _} = Error ->
+            Error;
+        Decoded ->
+            next(Bin, {data, Decoded, Part}, Next)
+    end.
 
--spec subtype_decode(SubTypeInt) -> SubType when
-    SubTypeInt :: subtype(),
+-spec subtype_decode(SubTypeInt) -> SubType | {error, invalid_subtype} when
+    SubTypeInt :: non_neg_integer(),
     SubType ::
         binary | function | binary_old | uuid_old | uuid | md5 | encrypted | compressed | user.
 subtype_decode(0) ->
@@ -297,4 +301,6 @@ subtype_decode(6) ->
 subtype_decode(7) ->
     compressed;
 subtype_decode(128) ->
-    user.
+    user;
+subtype_decode(_) ->
+    {error, invalid_subtype}.
