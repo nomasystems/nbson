@@ -26,6 +26,7 @@
 -define(EARRAY, 1).
 
 %%% TYPES
+-type context() :: ?EDOCUMENT | ?EARRAY.
 -type kind() ::
     ?DOUBLE_TYPE
     | ?STRING_TYPE
@@ -48,7 +49,6 @@
     | ?MAXKEY_TYPE
     | ?MINKEY_TYPE.
 
--type context() :: ?EDOCUMENT | ?EARRAY.
 -type subtype() :: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 128.
 %%%-----------------------------------------------------------------------------
 %%% EXTERNAL EXPORTS
@@ -116,8 +116,8 @@ next(<<Bin/binary>>, Current, [regex | Next]) ->
 next(<<Bin/binary>>, Current, [{regex_opts, Regex} | Next]) ->
     next(Bin, {regex, Regex, Current}, Next);
 next(<<Bin/binary>>, Current, [db_pointer | Next]) ->
-    pointer(Bin, [{db_pointer, Current} | Next]);
-next(<<Bin/binary>>, Current, [{db_pointer, Collection} | Next]) ->
+    pointer(Bin, [{pointer, Current} | Next]);
+next(<<Bin/binary>>, Current, [{pointer, Collection} | Next]) ->
     next(Bin, {pointer, Collection, Current}, Next);
 next(<<Bin/binary>>, Current, [jscode | Next]) ->
     next(Bin, {javascript, #{}, Current}, Next);
