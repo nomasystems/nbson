@@ -47,7 +47,8 @@
     | ?INT64_TYPE
     | ?MAXKEY_TYPE
     | ?MINKEY_TYPE.
--type type() :: ?EDOCUMENT | ?EARRAY | kind().
+
+-type context() :: ?EDOCUMENT | ?EARRAY.
 -type subtype() :: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 128.
 %%%-----------------------------------------------------------------------------
 %%% EXTERNAL EXPORTS
@@ -137,30 +138,30 @@ next(<<_Bin/binary>>, Current, _Next) ->
 document(<<?INT32(_Size), Bin/binary>>, Elements, Next) ->
     elist(Bin, ?EDOCUMENT, Elements, Next).
 
--spec elist(Data, Type, Elements, Next) -> Result when
+-spec elist(Data, Context, Elements, Next) -> Result when
     Data :: binary(),
-    Type :: type(),
+    Context :: context(),
     Elements :: map() | [term()],
     Next :: [term()],
     Result :: nbson:document() | {error, term()}.
-elist(<<0, Bin/binary>>, Type, Elements, Next) ->
-    case Type of
+elist(<<0, Bin/binary>>, Context, Elements, Next) ->
+    case Context of
         ?EARRAY when is_list(Elements) ->
             next(Bin, lists:reverse(Elements), Next);
         ?EDOCUMENT ->
             next(Bin, Elements, Next)
     end;
-elist(<<Bin/binary>>, Kind, Elements, Next) ->
-    elem(Bin, Kind, Elements, Next).
+elist(<<Bin/binary>>, Context, Elements, Next) ->
+    elem(Bin, Context, Elements, Next).
 
--spec elem(Data, Kind, Elements, Next) -> Result when
+-spec elem(Data, Context, Elements, Next) -> Result when
     Data :: binary(),
-    Kind :: kind(),
+    Context :: context(),
     Elements :: map() | [term()],
     Next :: [term()],
     Result :: nbson:document() | {error, term()}.
-elem(<<?INT8(Type), Bin/binary>>, Kind, Elements, Next) ->
-    cstring(Bin, [{evalue, Type, Kind, Elements} | Next]).
+elem(<<?INT8(Type), Bin/binary>>, Context, Elements, Next) ->
+    cstring(Bin, [{evalue, Type, Context, Elements} | Next]).
 
 -spec evalue(Data, Kind, Next) -> Result when
     Data :: binary(),
@@ -267,10 +268,10 @@ string(Base, Len, Next) ->
 
 -spec binary(Data, Size, SubType, Next) -> Result when
     Data :: binary(),
-    Size :: non_neg_integer(),
+    Size :: integer(),
     SubType :: subtype(),
     Next :: [term()],
-    Result :: non_neg_integer().
+    Result :: nbson:document() | {error, term()}.
 binary(<<Base/binary>>, Size, SubType, Next) ->
     <<Part:Size/binary, Bin/binary>> = Base,
     next(Bin, {data, subtype_decode(SubType), Part}, Next).
