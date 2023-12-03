@@ -12,8 +12,8 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 -module(nbson_decoder).
+
 -compile([{inline, [elist/4, evalue/3, subtype_decode/1]}]).
-%-compile([bin_opt_info]).
 
 %%% INCLUDE FILES
 -include("nbson_bson_types.hrl").
