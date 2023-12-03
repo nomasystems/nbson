@@ -97,13 +97,13 @@ bench_encode(Path, Times) ->
     {ok, Bin} = file:read_file(Path),
     DocCount = doc_count(Path),
     NbsonTimeEncode = if
-                    DocCount > 1 ->
-                       NbsonDocs = nbson:decode(Bin),
-                       erlperf:time(fun() -> nbson:encode(NbsonDocs) end, Times);
-                    true ->
-                        NbsonDocs = nbson:decode(Bin),
-                       erlperf:time(fun() -> nbson:encode(NbsonDocs) end, Times)
-                end,
+                          DocCount > 1 ->
+                              {ok, NbsonDocs} = nbson:decode(Bin),
+                              erlperf:time(fun() -> nbson:encode(NbsonDocs) end, Times);
+                          true ->
+                              {ok, NbsonDocs} = nbson:decode(Bin),
+                              erlperf:time(fun() -> nbson:encode(NbsonDocs) end, Times)
+                      end,
 
     {BsonErlangDocs, _Rest2} = get_docs(Bin, []),
 
