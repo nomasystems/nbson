@@ -60,26 +60,29 @@ The `nbson_BENCH` script under the `bench` directory on this repository measures
 Executing the measurement using the .bson files under `test/benchmarks/data` produced the table below. Each row corresponds to measuring the decoding time of the BSONs in a given file. The first column specifies the number of documents inside each BSON file, the second column specifies the byte sizes for each of those BSONs and the third and fourth columns show the measured times in µs for nbson and bson-erlang respectively.
 
 ```
+1> nbson_bench:bench().
 --------------------------------------------------------------------------------------
-DECODING PROCESS
---------------------------------------------------------------------------------------
-    Size (documents)     File size (bytes)       Nbson Time (us)  BsonErlang Time (us)
-                   1                   150                  1649                  2254
-                  10                  2156                   298                   793
-                 100                 21439                  3394                  7622
-                1000                208773                 32143                 72362
-               10000               2035919                960857               1985022
-              100000              20365952              14096820              28931531
---------------------------------------------------------------------------------------
-ENCODING PROCESS
+Decoder:
 --------------------------------------------------------------------------------------
     Size (documents)     File size (bytes)       Nbson Time (us)  BsonErlang Time (us)
-                   1                   150                   988                  1039
-                  10                  2156                   450                   663
-                 100                 21439                  3041                  5965
-                1000                208773                 25378                 59154
-               10000               2035919                276705                904258
-              100000              20365952               2753270              10265374
+                   1                   150                     2                     1
+                  10                  2156                     0                     0
+                 100                 21439                     1                     3
+                1000                208773                    22                    35
+               10000               2035919                   346                   847
+              100000              20365952                  6155                 10322
+--------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------
+Encoder:
+--------------------------------------------------------------------------------------
+    Size (documents)     File size (bytes)       Nbson Time (us)  BsonErlang Time (us)
+                   1                   150                     0                    10
+                  10                  2156                     0                     0
+                 100                 21439                     1                     4
+                1000                208773                    19                    29
+               10000               2035919                   354                   720
+              100000              20365952                  4063                  6802
+--------------------------------------------------------------------------------------
 ```
 
 Those used .bson files were generated using the [nbson_corpus](https://github.com/nomasystems/nbson_corpus) Erlang library.
