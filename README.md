@@ -55,37 +55,7 @@ On deserialization, we prevent the dynamic generation of atoms by converting BSO
 ## Benchmarking
 The BSON decoder implementation in `nbson_decoder.erl` uses [CPS](https://en.wikipedia.org/wiki/Continuation-passing_style). In this particular case, CPS leads to the use of the [sub binary delayed optimization](https://www.erlang.org/doc/efficiency_guide/binaryhandling.html#match-context) and improved efficiency in the deserialization process.
 
-The `nbson_BENCH` script under the `bench` directory on this repository measures the decoding and encoding times for a series of BSONs containing from 1 to 1M documents using `nbson`. This escript also executes such deserializations using [bson-erlang](https://github.com/comtihon/bson-erlang), a well-known BSON encoder/decoder, for comparison purposes. To execute the benchmark yourself, please run `rebar3 as bench compile` before executing the script.
-
-Executing the measurement using the .bson files under `test/benchmarks/data` produced the table below. Each row corresponds to measuring the decoding time of the BSONs in a given file. The first column specifies the number of documents inside each BSON file, the second column specifies the byte sizes for each of those BSONs and the third and fourth columns show the measured times in µs for nbson and bson-erlang respectively.
-
-```
-1> nbson_bench:bench().
---------------------------------------------------------------------------------------
-Decoder:
---------------------------------------------------------------------------------------
-    Size (documents)     File size (bytes)       Nbson Time (us)  BsonErlang Time (us)
-                   1                   150                     2                     1
-                  10                  2156                     0                     0
-                 100                 21439                     1                     3
-                1000                208773                    22                    35
-               10000               2035919                   346                   847
-              100000              20365952                  6155                 10322
---------------------------------------------------------------------------------------
---------------------------------------------------------------------------------------
-Encoder:
---------------------------------------------------------------------------------------
-    Size (documents)     File size (bytes)       Nbson Time (us)  BsonErlang Time (us)
-                   1                   150                     0                    10
-                  10                  2156                     0                     0
-                 100                 21439                     1                     4
-                1000                208773                    19                    29
-               10000               2035919                   354                   720
-              100000              20365952                  4063                  6802
---------------------------------------------------------------------------------------
-```
-
-Those used .bson files were generated using the [nbson_corpus](https://github.com/nomasystems/nbson_corpus) Erlang library.
+The [nbson_bench repository](https://github.com/nomasystems/nbson_bench) hosts benchmarks to measure the decoding and encoding times of different BSONs compared to other equivalent tools.
 
 # Examples
 Check out the `nbson_SUITE.erl` file under `tests` to see some examples of BSONs and their Erlang representation.
