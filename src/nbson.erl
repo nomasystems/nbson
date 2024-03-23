@@ -36,7 +36,7 @@
 -spec encode(Data) -> Result when
     Data :: undefined | document() | [document()],
     Result :: {ok, BSON} | {error, term()},
-    BSON :: binary() | [binary()].
+    BSON :: binary().
 encode(Data) ->
     nbson_encoder:encode(Data).
 
