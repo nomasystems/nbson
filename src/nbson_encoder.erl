@@ -25,6 +25,10 @@
 %%%-----------------------------------------------------------------------------
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
+-spec encode(Data) -> Result when
+    Data :: undefined | nbson:document() | [nbson:document()],
+    Result :: {ok, BSON} | {error, term()},
+    BSON :: binary().
 encode(undefined) ->
     {ok, <<>>};
 encode(Document) when is_map(Document), map_size(Document) == 0 ->
@@ -46,11 +50,22 @@ encode(Data) when is_list(Data), is_tuple(hd(Data)), size(hd(Data)) == 2 ->
             {ok, Encoded}
     end;
 encode(Data) when is_list(Data), is_map(hd(Data)) ->
-    {ok, <<<<<<(encode_map(Doc))/binary>> || Doc <- Data>>/binary>>}.
+    encode_map_list(Data, <<>>).
 
 %%%-----------------------------------------------------------------------------
 %%% INTERNAL FUNCTIONS
 %%%-----------------------------------------------------------------------------
+-spec encode_label(Value) -> Result when
+    Value :: integer() | binary(),
+    Result :: binary().
+encode_label(Label) when is_integer(Label) ->
+    integer_to_binary(Label);
+encode_label(Label) when is_binary(Label) ->
+    Label.
+
+-spec encode_list(Data) -> Result when
+    Data :: [nbson:document()],
+    Result :: binary() | {error, term()}.
 encode_list([]) ->
     ?EMPTY_DOC;
 encode_list(Documents) ->
@@ -61,14 +76,9 @@ encode_list(Documents) ->
             <<?INT32(byte_size(Encoded) + 5), Encoded/binary, ?NULL>>
     end.
 
-list_fold_encode(Document, {Pos, Acc}) ->
-    case encode_value(Document) of
-        {error, _Reason} = Error ->
-            Error;
-        {Type, Payload} ->
-            {Pos + 1, <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Pos)), Payload/binary>>}
-    end.
-
+-spec encode_map(Data) -> Result when
+    Data :: nbson:map_document(),
+    Result :: binary() | {error, term()}.
 encode_map(Document) ->
     case maps:fold(fun map_fold_encode/3, <<>>, Document) of
         {error, _Reason} = Error ->
@@ -77,16 +87,23 @@ encode_map(Document) ->
             <<?INT32(byte_size(Encoded) + 5), Encoded/binary, ?NULL>>
     end.
 
-map_fold_encode(_Label, undefined, Acc) ->
-    Acc;
-map_fold_encode(Label, Value, Acc) ->
-    case encode_value(Value) of
+-spec encode_map_list(MapList, Acc) -> Result when
+    MapList :: [nbson:map_document()],
+    Acc :: binary(),
+    Result :: {ok, binary()} | {error, term()}.
+encode_map_list([], Acc) ->
+    {ok, Acc};
+encode_map_list([Doc | Rest], Acc) ->
+    case encode_map(Doc) of
         {error, _Reason} = Error ->
             Error;
-        {Type, Payload} ->
-            <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Label)), Payload/binary>>
+        Bin ->
+            encode_map_list(Rest, <<Acc/binary, Bin/binary>>)
     end.
 
+-spec encode_proplist(Data) -> Result when
+    Data :: nbson:proplist_document(),
+    Result :: binary() | {error, term()}.
 encode_proplist(Proplist) ->
     case encode_proplist(Proplist, <<>>) of
         {error, _Reason} = Error ->
@@ -95,6 +112,10 @@ encode_proplist(Proplist) ->
             <<?INT32(byte_size(Encoded) + 5), Encoded/binary, ?NULL>>
     end.
 
+-spec encode_proplist(Data, Acc) -> Result when
+    Data :: list(),
+    Acc :: binary(),
+    Result :: binary() | {error, term()}.
 encode_proplist([], Acc) ->
     Acc;
 encode_proplist([{_Label, undefined} | Rest], Acc) ->
@@ -108,8 +129,14 @@ encode_proplist([{Label, Value} | Rest], Acc) ->
                 Rest,
                 <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Label)), Payload/binary>>
             )
-    end.
+    end;
+encode_proplist([Other | _Rest], _Acc) ->
+    {error, {invalid_proplist_document, Other}}.
 
+-spec encode_value(Value) -> Result when
+    Value :: nbson:value(),
+    Result :: {Type, binary()} | {error, term()},
+    Type :: 1..255.
 encode_value(V) when is_float(V) ->
     {?DOUBLE_TYPE, <<?DOUBLE(V)>>};
 encode_value(V) when is_binary(V) ->
@@ -129,7 +156,12 @@ encode_value(V) when is_list(V), is_tuple(hd(V)), is_binary(element(1, hd(V))) -
             {?EMBDOC_TYPE, Bson}
     end;
 encode_value(V) when is_list(V) ->
-    {?ARRAY_TYPE, encode_list(V)};
+    case encode_list(V) of
+        {error, _Reason} = Error ->
+            Error;
+        EncodedList ->
+            {?ARRAY_TYPE, EncodedList}
+    end;
 encode_value({data, binary, Data}) when is_binary(Data) ->
     {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(0), Data/binary>>};
 encode_value({data, function, Data}) when is_binary(Data) ->
@@ -192,17 +224,46 @@ encode_value(max_key) ->
 encode_value(min_key) ->
     {?MINKEY_TYPE, <<>>}.
 
-encode_label(Label) when is_integer(Label) ->
-    integer_to_binary(Label);
-encode_label(Label) when is_binary(Label) ->
-    Label.
-
-foldwhile(F, Accu, [Hd | Tail]) when is_function(F, 2) ->
-    case F(Hd, Accu) of
+-spec foldwhile(F, AccIn, List) -> Result when
+    F :: fun((term(), AccIn) -> AccOut),
+    AccIn :: term(),
+    AccOut :: term(),
+    List :: list(term()),
+    Result :: term().
+foldwhile(F, AccIn, [Hd | Tail]) when is_function(F, 2) ->
+    case F(Hd, AccIn) of
         {error, _Reason} = Error ->
             Error;
         AccOut ->
             foldwhile(F, AccOut, Tail)
     end;
-foldwhile(F, Accu, []) when is_function(F, 2) ->
-    Accu.
+foldwhile(F, AccIn, []) when is_function(F, 2) ->
+    AccIn.
+
+-spec list_fold_encode(Document, {Pos, Acc}) -> Result when
+    Document :: nbson:document(),
+    Pos :: non_neg_integer(),
+    Acc :: binary(),
+    Result :: {non_neg_integer(), binary()} | {error, term()}.
+list_fold_encode(Document, {Pos, Acc}) ->
+    case encode_value(Document) of
+        {error, _Reason} = Error ->
+            Error;
+        {Type, Payload} ->
+            {Pos + 1, <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Pos)), Payload/binary>>}
+    end.
+
+-spec map_fold_encode(Label, Value, Acc) -> Result when
+    Label :: integer() | binary(),
+    Value :: nbson:value(),
+    Acc :: binary(),
+    Result :: binary() | {error, term()}.
+map_fold_encode(_Label, undefined, Acc) ->
+    Acc;
+map_fold_encode(Label, Value, Acc) ->
+    case encode_value(Value) of
+        {error, _Reason} = Error ->
+            Error;
+        {Type, Payload} ->
+            <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Label)), Payload/binary>>
+    end.

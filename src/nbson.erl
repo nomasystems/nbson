@@ -17,14 +17,45 @@
 -export([encode/1, decode/1, get/2]).
 
 %%% TYPES
--type document() :: #{key() => value()} | [{key(), value()}].
+-type map_document() :: #{key() => value()}.
+-type proplist_document() :: [{key(), value()}].
+-type document() :: map_document() | proplist_document() | [{}].
 -type document_path() :: [key()].
 -type key() :: binary().
--type value() :: any().
+-type regex_arg() :: unicode:latin1_chardata() | unicode:chardata() | unicode:external_chardata().
+
+-type value() ::
+    float()
+    | integer()
+    | binary()
+    | undefined
+    | null
+    | min_key
+    | max_key
+    | boolean()
+    | atom()
+    | nbson:document()
+    | [value()]
+    | {data, binary, binary()}
+    | {data, function, binary()}
+    | {data, uuid, binary()}
+    | {data, md5, binary()}
+    | {data, encrypted, binary()}
+    | {data, compressed, binary()}
+    | {data, user, binary()}
+    | {object_id, binary()}
+    | {non_neg_integer(), non_neg_integer(), non_neg_integer()}
+    | {regex, regex_arg(), regex_arg()}
+    | {pointer, binary(), binary()}
+    | {javascript, map(), binary()}
+    | {javascript, document(), binary()}
+    | {timestamp, non_neg_integer(), non_neg_integer()}.
 
 %%% EXPORT TYPES
 -export_type([
     document/0,
+    map_document/0,
+    proplist_document/0,
     document_path/0,
     key/0,
     value/0
@@ -34,7 +65,7 @@
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
 -spec encode(Data) -> Result when
-    Data :: undefined | document() | [document()],
+    Data :: undefined | map_document() | proplist_document() | [document()],
     Result :: {ok, BSON} | {error, term()},
     BSON :: binary().
 encode(Data) ->
