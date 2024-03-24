@@ -48,14 +48,13 @@
     | ?INT64_TYPE
     | ?MAXKEY_TYPE
     | ?MINKEY_TYPE.
--type decode_error_reason() :: invalid_subtype | {invalid_bson, term()}.
 
 %%%-----------------------------------------------------------------------------
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
 -spec decode(Data) -> Result when
     Data :: binary(),
-    Result :: {ok, [nbson:document()]} | {error, decode_error_reason()}.
+    Result :: {ok, [nbson:document()]} | {error, nbson:decode_error_reason()}.
 decode(<<>>) ->
     {ok, []};
 decode(Bin) when is_binary(Bin) ->
@@ -69,7 +68,7 @@ decode(Bin) when is_binary(Bin) ->
 -spec decode_docs(Data, Acc) -> Result when
     Data :: binary(),
     Acc :: [nbson:document()],
-    Result :: [nbson:document()] | {error, decode_error_reason()}.
+    Result :: [nbson:document()] | {error, nbson:decode_error_reason()}.
 decode_docs(<<>>, Acc) ->
     lists:reverse(Acc);
 decode_docs(<<?INT32(Size), _Rest/binary>> = Data, Acc) ->
@@ -79,7 +78,7 @@ decode_docs(<<?INT32(Size), _Rest/binary>> = Data, Acc) ->
     Data :: binary(),
     Size :: integer(),
     Acc :: [nbson:document()],
-    Result :: {ok, [nbson:document()]} | {error, decode_error_reason()}.
+    Result :: {ok, [nbson:document()]} | {error, nbson:decode_error_reason()}.
 decode_docs(<<Bin/binary>>, Size, Acc) ->
     case Bin of
         <<Next:Size/binary, Rest/binary>> ->
@@ -100,7 +99,7 @@ decode_docs(<<Bin/binary>>, Size, Acc) ->
     Data :: binary(),
     Current :: term(),
     Next :: [term()],
-    Result :: nbson:document() | {error, decode_error_reason()}.
+    Result :: nbson:document() | {error, nbson:decode_error_reason()}.
 next(<<>>, Current, [document]) ->
     Current;
 next(<<Bin/binary>>, Current, [evalue, Type, ?EDOCUMENT, Elements | Next]) ->
@@ -134,7 +133,7 @@ next(<<_Bin/binary>>, Current, _Next) ->
     Data :: binary(),
     Elements :: map(),
     Next :: [term()],
-    Result :: nbson:document() | {error, decode_error_reason()}.
+    Result :: nbson:document() | {error, nbson:decode_error_reason()}.
 document(<<?INT32(_Size), Bin/binary>>, Elements, Next) ->
     elist(Bin, ?EDOCUMENT, Elements, Next).
 
@@ -143,7 +142,7 @@ document(<<?INT32(_Size), Bin/binary>>, Elements, Next) ->
     Context :: context(),
     Elements :: map() | [term()],
     Next :: [term()],
-    Result :: nbson:document() | {error, decode_error_reason()}.
+    Result :: nbson:document() | {error, nbson:decode_error_reason()}.
 elist(<<0, Bin/binary>>, Context, Elements, Next) ->
     case Context of
         ?EARRAY when is_list(Elements) ->
@@ -159,7 +158,7 @@ elist(<<Bin/binary>>, Context, Elements, Next) ->
     Context :: context(),
     Elements :: map() | [term()],
     Next :: [term()],
-    Result :: nbson:document() | {error, decode_error_reason()}.
+    Result :: nbson:document() | {error, nbson:decode_error_reason()}.
 elem(<<?INT8(Type), Bin/binary>>, Context, Elements, Next) ->
     cstring(Bin, [evalue, Type, Context, Elements | Next]).
 
@@ -167,7 +166,7 @@ elem(<<?INT8(Type), Bin/binary>>, Context, Elements, Next) ->
     Data :: binary(),
     Kind :: kind(),
     Next :: [term()],
-    Result :: nbson:document() | {error, decode_error_reason()}.
+    Result :: nbson:document() | {error, nbson:decode_error_reason()}.
 evalue(<<Bin/binary>>, Type, Next) ->
     case Type of
         ?DOUBLE_TYPE ->
@@ -231,7 +230,7 @@ evalue(<<Bin/binary>>, Type, Next) ->
     Data :: binary(),
     Elements :: map() | [term()],
     Next :: [term()],
-    Result :: nbson:document() | {error, decode_error_reason()}.
+    Result :: nbson:document() | {error, nbson:decode_error_reason()}.
 array(<<0, Bin/binary>>, Elements, Next) ->
     next(Bin, Elements, Next);
 array(<<Bin/binary>>, Elements, Next) ->
@@ -243,7 +242,7 @@ pointer(<<?BITS96(Id), Bin/binary>>, Next) ->
 -spec cstring(Data, Next) -> Result when
     Data :: binary(),
     Next :: [term()],
-    Result :: nbson:document() | {error, decode_error_reason()}.
+    Result :: nbson:document() | {error, nbson:decode_error_reason()}.
 cstring(<<Bin/binary>>, Next) ->
     Len = cstring_len(Bin, 0),
     string(Bin, Len, Next).
@@ -261,7 +260,7 @@ cstring_len(<<_C, Rest/binary>>, Len) ->
     Data :: binary(),
     Len :: integer(),
     Next :: [term()],
-    Result :: nbson:document() | {error, decode_error_reason()}.
+    Result :: nbson:document() | {error, nbson:decode_error_reason()}.
 string(Base, Len, Next) ->
     <<String:Len/binary, ?NULL, Bin/binary>> = Base,
     next(Bin, String, Next).
@@ -271,7 +270,7 @@ string(Base, Len, Next) ->
     Size :: integer(),
     SubType :: non_neg_integer(),
     Next :: [term()],
-    Result :: nbson:document() | {error, decode_error_reason()}.
+    Result :: nbson:document() | {error, nbson:decode_error_reason()}.
 binary(<<Base/binary>>, Size, SubType, Next) ->
     <<Part:Size/binary, Bin/binary>> = Base,
     case subtype_decode(SubType) of

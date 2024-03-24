@@ -27,7 +27,7 @@
 %%%-----------------------------------------------------------------------------
 -spec encode(Data) -> Result when
     Data :: undefined | nbson:document() | [nbson:document()],
-    Result :: {ok, BSON} | {error, term()},
+    Result :: {ok, BSON} | {error, nbson:encode_error_reason()},
     BSON :: binary().
 encode(undefined) ->
     {ok, <<>>};
@@ -65,7 +65,7 @@ encode_label(Label) when is_binary(Label) ->
 
 -spec encode_list(Data) -> Result when
     Data :: [nbson:document()],
-    Result :: binary() | {error, term()}.
+    Result :: binary() | {error, nbson:encode_error_reason()}.
 encode_list([]) ->
     ?EMPTY_DOC;
 encode_list(Documents) ->
@@ -78,7 +78,7 @@ encode_list(Documents) ->
 
 -spec encode_map(Data) -> Result when
     Data :: nbson:map_document(),
-    Result :: binary() | {error, term()}.
+    Result :: binary() | {error, nbson:encode_error_reason()}.
 encode_map(Document) ->
     case maps:fold(fun map_fold_encode/3, <<>>, Document) of
         {error, _Reason} = Error ->
@@ -90,7 +90,7 @@ encode_map(Document) ->
 -spec encode_map_list(MapList, Acc) -> Result when
     MapList :: [nbson:map_document()],
     Acc :: binary(),
-    Result :: {ok, binary()} | {error, term()}.
+    Result :: {ok, binary()} | {error, nbson:encode_error_reason()}.
 encode_map_list([], Acc) ->
     {ok, Acc};
 encode_map_list([Doc | Rest], Acc) ->
@@ -103,7 +103,7 @@ encode_map_list([Doc | Rest], Acc) ->
 
 -spec encode_proplist(Data) -> Result when
     Data :: nbson:proplist_document(),
-    Result :: binary() | {error, term()}.
+    Result :: binary() | {error, nbson:encode_error_reason()}.
 encode_proplist(Proplist) ->
     case encode_proplist(Proplist, <<>>) of
         {error, _Reason} = Error ->
@@ -115,7 +115,7 @@ encode_proplist(Proplist) ->
 -spec encode_proplist(Data, Acc) -> Result when
     Data :: list(),
     Acc :: binary(),
-    Result :: binary() | {error, term()}.
+    Result :: binary() | {error, nbson:encode_error_reason()}.
 encode_proplist([], Acc) ->
     Acc;
 encode_proplist([{_Label, undefined} | Rest], Acc) ->
@@ -135,7 +135,7 @@ encode_proplist([Other | _Rest], _Acc) ->
 
 -spec encode_value(Value) -> Result when
     Value :: nbson:value(),
-    Result :: {Type, binary()} | {error, term()},
+    Result :: {Type, binary()} | {error, nbson:encode_error_reason()},
     Type :: 1..255.
 encode_value(V) when is_float(V) ->
     {?DOUBLE_TYPE, <<?DOUBLE(V)>>};
@@ -244,7 +244,7 @@ foldwhile(F, AccIn, []) when is_function(F, 2) ->
     Document :: nbson:document(),
     Pos :: non_neg_integer(),
     Acc :: binary(),
-    Result :: {non_neg_integer(), binary()} | {error, term()}.
+    Result :: {non_neg_integer(), binary()} | {error, nbson:encode_error_reason()}.
 list_fold_encode(Document, {Pos, Acc}) ->
     case encode_value(Document) of
         {error, _Reason} = Error ->
@@ -257,7 +257,7 @@ list_fold_encode(Document, {Pos, Acc}) ->
     Label :: integer() | binary(),
     Value :: nbson:value(),
     Acc :: binary(),
-    Result :: binary() | {error, term()}.
+    Result :: binary() | {error, nbson:encode_error_reason()}.
 map_fold_encode(_Label, undefined, Acc) ->
     Acc;
 map_fold_encode(Label, Value, Acc) ->

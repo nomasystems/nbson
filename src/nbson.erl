@@ -23,7 +23,6 @@
 -type document_path() :: [key()].
 -type key() :: binary().
 -type regex_arg() :: unicode:latin1_chardata() | unicode:chardata() | unicode:external_chardata().
-
 -type value() ::
     float()
     | integer()
@@ -50,6 +49,13 @@
     | {javascript, map(), binary()}
     | {javascript, document(), binary()}
     | {timestamp, non_neg_integer(), non_neg_integer()}.
+-type decode_error_reason() ::
+    invalid_subtype
+    | {invalid_bson, term()}.
+-type encode_error_reason() ::
+    {invalid_proplist_document, term()}
+    | {not_unicode_regex, {term(), term()}}
+    | {integer_too_large, integer()}.
 
 %%% EXPORT TYPES
 -export_type([
@@ -58,7 +64,9 @@
     proplist_document/0,
     document_path/0,
     key/0,
-    value/0
+    value/0,
+    decode_error_reason/0,
+    encode_error_reason/0
 ]).
 
 %%%-----------------------------------------------------------------------------
