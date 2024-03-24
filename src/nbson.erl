@@ -19,7 +19,7 @@
 %%% TYPES
 -type map_document() :: #{key() => value()}.
 -type proplist_document() :: [{key(), value()}].
--type document() :: map_document() | proplist_document() | [{}].
+-type document() :: map_document() | proplist_document().
 -type document_path() :: [key()].
 -type key() :: binary().
 -type regex_arg() :: unicode:latin1_chardata() | unicode:chardata() | unicode:external_chardata().
@@ -31,7 +31,8 @@
     | null
     | min_key
     | max_key
-    | boolean()
+    | true
+    | false
     | atom()
     | nbson:document()
     | [value()]
@@ -73,7 +74,7 @@
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
 -spec encode(Data) -> Result when
-    Data :: undefined | map_document() | proplist_document() | [document()],
+    Data :: undefined | [{}] | map_document() | proplist_document() | [document()],
     Result :: {ok, BSON} | {error, encode_error_reason()},
     BSON :: binary().
 encode(Data) ->

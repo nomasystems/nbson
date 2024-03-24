@@ -26,7 +26,8 @@
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
 -spec encode(Data) -> Result when
-    Data :: undefined | nbson:document() | [nbson:document()],
+    Data ::
+        undefined | [{}] | nbson:map_document() | nbson:proplist_document() | [nbson:document()],
     Result :: {ok, BSON} | {error, nbson:encode_error_reason()},
     BSON :: binary().
 encode(undefined) ->
@@ -42,7 +43,7 @@ encode(Document) when is_map(Document) ->
     end;
 encode([{}]) ->
     {ok, ?EMPTY_DOC};
-encode(Data) when is_list(Data), is_tuple(hd(Data)), size(hd(Data)) == 2 ->
+encode([{K, _V} | _Rest] = Data) when is_binary(K) ->
     case encode_proplist(Data) of
         {error, _Reason} = Error ->
             Error;
@@ -184,6 +185,11 @@ encode_value(false) ->
     {?BOOLEAN_TYPE, <<?INT8(0)>>};
 encode_value(true) ->
     {?BOOLEAN_TYPE, <<?INT8(1)>>};
+%max_key and min_key should be the last and ordered by Type value. But gradualizer doesn't like that
+encode_value(max_key) ->
+    {?MAXKEY_TYPE, <<>>};
+encode_value(min_key) ->
+    {?MINKEY_TYPE, <<>>};
 encode_value({Mega, Sec, Micro}) when is_integer(Mega), is_integer(Sec), is_integer(Micro) ->
     {?DATETIME_TYPE, <<?INT64(Mega * 1000000000 + Sec * 1000 + Micro div 1000)>>};
 encode_value(null) ->
@@ -218,11 +224,7 @@ encode_value({timestamp, Inc, Time}) ->
 encode_value(V) when is_integer(V), -16#8000000000000000 =< V, V =< 16#7fffffffffffffff ->
     {?INT64_TYPE, <<?INT64(V)>>};
 encode_value(V) when is_integer(V) ->
-    {error, {integer_too_large, V}};
-encode_value(max_key) ->
-    {?MAXKEY_TYPE, <<>>};
-encode_value(min_key) ->
-    {?MINKEY_TYPE, <<>>}.
+    {error, {integer_too_large, V}}.
 
 -spec foldwhile(F, AccIn, List) -> Result when
     F :: fun((term(), AccIn) -> AccOut),
