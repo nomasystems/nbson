@@ -74,14 +74,14 @@
 %%%-----------------------------------------------------------------------------
 -spec encode(Data) -> Result when
     Data :: undefined | map_document() | proplist_document() | [document()],
-    Result :: {ok, BSON} | {error, term()},
+    Result :: {ok, BSON} | {error, encode_error_reason()},
     BSON :: binary().
 encode(Data) ->
     nbson_encoder:encode(Data).
 
 -spec decode(Data) -> Result when
     Data :: binary(),
-    Result :: {ok, [document()]} | {error, term()}.
+    Result :: {ok, [document()]} | {error, decode_error_reason()}.
 decode(Data) ->
     nbson_decoder:decode(Data).
 
