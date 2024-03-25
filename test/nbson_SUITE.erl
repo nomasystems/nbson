@@ -44,8 +44,6 @@ all() ->
         symbols,
         timestamp,
         undef,
-        %%%
-        multi,
         proplists,
         various
     ].
@@ -88,7 +86,7 @@ array(_Config) ->
         <<46, 0, 0, 0, 4, 97, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
     BaseMap = #{<<"arr">> => [1, <<"two">>, <<"three">>]},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 boolean() ->
@@ -96,7 +94,7 @@ boolean() ->
 boolean(_Config) ->
     BaseBin = <<20, 0, 0, 0, 8, 102, 97, 108, 115, 101, 0, 0, 8, 116, 114, 117, 101, 0, 1, 0>>,
     BaseMap = #{<<"true">> => true, <<"false">> => false},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 data_bin() ->
@@ -105,7 +103,7 @@ data_bin(_Config) ->
     BaseBin =
         <<23, 0, 0, 0, 5, 98, 105, 110, 0, 8, 0, 0, 0, 0, 131, 107, 0, 4, 110, 111, 109, 97, 0>>,
     BaseMap = #{<<"bin">> => {data, binary, <<131, 107, 0, 4, 110, 111, 109, 97>>}},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 data_compressed() ->
@@ -122,7 +120,7 @@ data_compressed(_Config) ->
             139, 8, 0, 0, 0, 0, 0, 0, OS, 43, 201, 200, 44, 86, 0, 162, 68, 133, 146, 212, 138, 18,
             0, 33, 62, 234, 238, 14, 0, 0, 0, 0>>,
     BaseMap = #{<<"compressed">> => {data, compressed, GZip}},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 data_encrypted() ->
@@ -138,7 +136,7 @@ data_encrypted(_Config) ->
         <<35, 0, 0, 0, 5, 101, 110, 99, 114, 121, 112, 116, 101, 100, 0, 14, 0, 0, 0, 6, 194, 179,
             26, 216, 90, 53, 38, 51, 98, 78, 27, 228, 65, 164, 0>>,
     BaseMap = #{<<"encrypted">> => {data, encrypted, CipherText}},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap),
     Text = crypto:crypto_one_time_aead(aes_256_gcm, Key, IV, CipherText, AAD, Tag, false).
 
@@ -155,7 +153,7 @@ data_fun(_Config) ->
             {data, function, <<"function square(number) { return number * number; }">>}
     },
 
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 data_md5() ->
@@ -168,7 +166,7 @@ data_md5(_Config) ->
         <<31, 0, 0, 0, 5, 109, 100, 53, 0, 16, 0, 0, 0, 5, 120, 130, 26, 5, 210, 130, 130, 46, 74,
             190, 193, 144, 192, 97, 186, 120, 0>>,
     BaseMap = #{<<"md5">> => {data, md5, MD5}},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 data_uuid() ->
@@ -179,7 +177,7 @@ data_uuid(_Config) ->
             45, 101, 56, 57, 98, 45, 49, 50, 100, 51, 45, 97, 52, 53, 54, 45, 52, 50, 54, 54, 49,
             52, 49, 55, 52, 48, 48, 48, 0>>,
     BaseMap = #{<<"uuid">> => {data, uuid, <<"123e4567-e89b-12d3-a456-426614174000">>}},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 datetime() ->
@@ -187,7 +185,7 @@ datetime() ->
 datetime(_Config) ->
     BaseBin = <<17, 0, 0, 0, 9, 100, 116, 0, 223, 131, 98, 249, 127, 1, 0, 0, 0>>,
     BaseMap = #{<<"dt">> => {1649, 156457, 439000}},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 db_pointer() ->
@@ -200,7 +198,7 @@ db_pointer(_Config) ->
         <<"ptr">> =>
             {pointer, <<"ns">>, <<98, 80, 61, 22, 65, 21, 149, 194, 153, 178, 194, 34>>}
     },
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 double() ->
@@ -208,7 +206,7 @@ double() ->
 double(_Config) ->
     BaseBin = <<18, 0, 0, 0, 1, 111, 110, 101, 0, 0, 0, 0, 0, 0, 0, 240, 63, 0>>,
     BaseMap = #{<<"one">> => 1.0},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 embdoc() ->
@@ -218,7 +216,7 @@ embdoc(_Config) ->
         <<28, 0, 0, 0, 3, 100, 111, 99, 0, 18, 0, 0, 0, 2, 111, 110, 101, 0, 4, 0, 0, 0, 111, 110,
             101, 0, 0, 0>>,
     BaseMap = #{<<"doc">> => #{<<"one">> => <<"one">>}},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 int64() ->
@@ -226,7 +224,7 @@ int64() ->
 int64(_Config) ->
     BaseBin = <<20, 0, 0, 0, 18, 105, 110, 116, 54, 52, 0, 188, 104, 151, 147, 227, 13, 1, 23, 0>>,
     BaseMap = #{<<"int64">> => 1657621408933963964},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 js() ->
@@ -236,7 +234,7 @@ js(_Config) ->
         <<41, 0, 0, 0, 13, 99, 111, 100, 101, 0, 26, 0, 0, 0, 102, 117, 110, 99, 116, 105, 111, 110,
             40, 120, 41, 32, 123, 32, 114, 101, 116, 117, 114, 110, 32, 120, 59, 32, 125, 0, 0>>,
     BaseMap = #{<<"code">> => {javascript, #{}, <<"function(x) { return x; }">>}},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 js_ws() ->
@@ -247,7 +245,7 @@ js_ws(_Config) ->
             105, 111, 110, 32, 40, 120, 41, 123, 32, 114, 101, 116, 117, 114, 110, 32, 120, 32, 42,
             32, 120, 59, 32, 125, 0, 12, 0, 0, 0, 16, 120, 0, 1, 0, 0, 0, 0, 0>>,
     BaseMap = #{<<"jsws">> => {javascript, #{<<"x">> => 1}, <<"function (x){ return x * x; }">>}},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 max_key() ->
@@ -255,7 +253,7 @@ max_key() ->
 max_key(_Config) ->
     BaseBin = <<14, 0, 0, 0, 127, 109, 97, 120, 95, 107, 101, 121, 0, 0>>,
     BaseMap = #{<<"max_key">> => max_key},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 min_key() ->
@@ -263,7 +261,7 @@ min_key() ->
 min_key(_Config) ->
     BaseBin = <<14, 0, 0, 0, 255, 109, 105, 110, 95, 107, 101, 121, 0, 0>>,
     BaseMap = #{<<"min_key">> => min_key},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 null() ->
@@ -271,7 +269,7 @@ null() ->
 null(_Config) ->
     BaseBin = <<10, 0, 0, 0, 10, 111, 112, 116, 0, 0>>,
     BaseMap = #{<<"opt">> => null},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 obj_id() ->
@@ -279,7 +277,7 @@ obj_id() ->
 obj_id(_Config) ->
     BaseBin = <<22, 0, 0, 0, 7, 95, 105, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0>>,
     BaseMap = #{<<"_id">> => {object_id, <<0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1>>}},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 regex() ->
@@ -289,7 +287,7 @@ regex(_Config) ->
         <<29, 0, 0, 0, 11, 110, 97, 109, 101, 0, 47, 94, 110, 111, 109, 97, 45, 91, 48, 45, 57, 93,
             46, 42, 47, 0, 105, 0, 0>>,
     BaseMap = #{<<"name">> => {regex, <<"/^noma-[0-9].*/">>, <<"i">>}},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 string() ->
@@ -297,7 +295,7 @@ string() ->
 string(_Config) ->
     BaseBin = <<18, 0, 0, 0, 2, 115, 116, 114, 0, 4, 0, 0, 0, 115, 116, 114, 0, 0>>,
     BaseMap = #{<<"str">> => <<"str">>},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 symbols() ->
@@ -305,7 +303,7 @@ symbols() ->
 symbols(_Config) ->
     BaseBin = <<15, 0, 0, 0, 14, 97, 0, 3, 0, 0, 0, 97, 98, 0, 0>>,
     BaseMap = #{<<"a">> => ab},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 timestamp() ->
@@ -315,7 +313,7 @@ timestamp(_Config) ->
         <<24, 0, 0, 0, 17, 116, 105, 109, 101, 115, 116, 97, 109, 112, 0, 193, 80, 205, 98, 1, 0, 0,
             0, 0>>,
     BaseMap = #{<<"timestamp">> => {timestamp, 1657622721, 1}},
-    {ok, [BaseMap]} = nbson:decode(BaseBin),
+    {ok, BaseMap} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 undef() ->
@@ -324,150 +322,13 @@ undef(_Config) ->
     BaseBin = <<14, 0, 0, 0, 14, 98, 0, 2, 0, 0, 0, 99, 0, 0>>,
     BaseMap1 = #{<<"a">> => undefined, <<"b">> => c},
     BaseMap2 = #{<<"b">> => c},
-    {ok, [BaseMap2]} = nbson:decode(BaseBin),
+    {ok, BaseMap2} = nbson:decode(BaseBin),
     {ok, BaseBin} = nbson:encode(BaseMap1).
-
-multi() ->
-    [{userdata, [{doc, "Tests multi document decode untested cases."}]}].
-multi(_Config) ->
-    Documents = [
-        #{<<"null-dJw=">> => null, <<"symbol-PxjQaA==">> => symbol},
-        #{
-            <<"32bit_int-xuYNvg==">> => 1033835296,
-            <<"decimal-kGE2">> => 27498990.829082392,
-            <<"double-UJY=">> => 73439946.16454887,
-            <<"javascript_ws-H3ROBw==">> =>
-                {javascript, #{<<"x">> => 1}, <<"function (x){ return x * x; }">>},
-            <<"object-kg==">> => #{<<"null-D3fO">> => null},
-            <<"string-ng==">> => <<"VTIHDIzjMbnmLD4TaQA=">>
-        },
-        #{
-            <<"64bit_int-Rg==">> => 3118048609991648864,
-            <<"binary_data-31/sJw==">> =>
-                {data, function,
-                    <<7, 167, 169, 118, 95, 235, 216, 96, 223, 33, 107, 193, 139, 245, 54, 151, 253,
-                        56, 155>>},
-            <<"boolean-9PRJ">> => false,
-            <<"boolean-O0kM">> => false,
-            <<"javascript_ws-EjM=">> =>
-                {javascript, #{<<"x">> => 1}, <<"function (x){ return x * x; }">>},
-            <<"object-YA==">> =>
-                #{
-                    <<"regular_expression-+MA=">> =>
-                        {regex, <<"rO+3hT7K7deGdhPvvA==">>, <<"imxs">>},
-                    <<"regular_expression-bg==">> =>
-                        {regex, <<"ig==">>, <<"imxs">>}
-                },
-            <<"object_id-dw==">> => {object_id, <<"30a06cdc41cf">>},
-            <<"timestamp-iKfl">> => {timestamp, 83558059, 1109549932}
-        },
-        #{
-            <<"max_key-mao=">> => maxkey,
-            <<"object-BFpFIQ==">> =>
-                #{
-                    <<"javascript_ws-PQ==">> =>
-                        {javascript, #{<<"x">> => 1}, <<"function (x){ return x * x; }">>},
-                    <<"null-4jsy">> => null,
-                    <<"timestamp-zBD6pQ==">> =>
-                        {timestamp, 1066598711, 883453773}
-                }
-        },
-        #{
-            <<"64bit_int-7T4=">> => 3884503075345403561,
-            <<"decimal-KXra">> => 75208402.43127207,
-            <<"null-k9z1">> => null
-        },
-        #{
-            <<"64bit_int-7+2xKA==">> => 3975528678009248538,
-            <<"array-MBBJew==">> =>
-                [
-                    {regex, <<"5OY=">>, <<"imxs">>},
-                    {regex, <<"aud4xw==">>, <<"imxs">>}
-                ],
-            <<"double-cTqw">> => 67670705.68960184,
-            <<"double-fA==">> => 70570920.67318127,
-            <<"javascript-Gg==">> =>
-                {javascript, #{}, <<"function(x) { return x; }">>},
-            <<"object_id-vLTmpg==">> => {object_id, <<"64dd91456543">>},
-            <<"regular_expression-kwkC">> =>
-                {regex, <<"QareKbATkD8=">>, <<"imxs">>},
-            <<"string-Pg==">> => <<"81QO">>,
-            <<"timestamp-82r4">> => {timestamp, 1442557192, 431496962}
-        },
-        #{
-            <<"array-nxmm">> =>
-                [null, 43442543.6892035, <<"cGp+kW0cscjqPw==">>],
-            <<"binary_data-IpY=">> =>
-                {data, function, <<132, 181, 215, 203, 197, 149, 154>>},
-            <<"binary_data-ZPVL">> =>
-                {data, function, <<153, 16, 58, 72, 236, 114, 72, 244, 196, 38>>},
-            <<"boolean-psqS">> => true,
-            <<"javascript_ws-a4k=">> =>
-                {javascript, #{<<"x">> => 1}, <<"function (x){ return x * x; }">>},
-            <<"min_key-MWc=">> => minkey
-        },
-        #{
-            <<"64bit_int-FQ==">> => 3829028848330592335,
-            <<"javascript-Z+o=">> =>
-                {javascript, #{}, <<"function(x) { return x; }">>}
-        },
-        #{
-            <<"32bit_int-0R8=">> => 1956291090,
-            <<"boolean-DQ==">> => false,
-            <<"date-yQ==">> => {473270961, 264049, 957000},
-            <<"javascript-haaIdg==">> =>
-                {javascript, #{}, <<"function(x) { return x; }">>},
-            <<"javascript_ws-/DyP">> =>
-                {javascript, #{<<"x">> => 1}, <<"function (x){ return x * x; }">>},
-            <<"min_key-p4kW">> => minkey,
-            <<"object-wQ==">> =>
-                #{
-                    <<"object-yHdI">> =>
-                        #{
-                            <<"array-q3+o">> => [973957529],
-                            <<"javascript-e3RW">> =>
-                                {javascript, #{}, <<"function(x) { return x; }">>},
-                            <<"min_key-bltN">> => minkey
-                        },
-                    <<"timestamp-x5E=">> => {timestamp, 336694066, 1682812733}
-                },
-            <<"regular_expression-cec=">> =>
-                {regex, <<"hpM67Mxw">>, <<"imxs">>},
-            <<"string-kuU=">> => <<"rvauc7tDKg==">>
-        },
-        #{
-            <<"32bit_int-LPU5">> => 453616695,
-            <<"64bit_int-RZQM2A==">> => 5526198722842772363,
-            <<"boolean-Pj8ZhA==">> => false,
-            <<"javascript-E1PO">> =>
-                {javascript, #{}, <<"function(x) { return x; }">>},
-            <<"javascript_ws-udsE0A==">> =>
-                {javascript, #{<<"x">> => 1}, <<"function (x){ return x * x; }">>},
-            <<"min_key-5OqQ">> => minkey,
-            <<"object-nw==">> =>
-                #{
-                    <<"object-EeLF">> =>
-                        #{<<"undefined-BStQeQ==">> => null}
-                },
-            <<"undefined-2g==">> => null
-        }
-    ],
-    {ok, Encoded} = nbson:encode(Documents),
-    {ok, Documents} = nbson:decode(Encoded),
-
-    Document = lists:nth(3, Documents),
-    3118048609991648864 = nbson:get(<<"64bit_int-Rg==">>, Document),
-    undefined = nbson:get([<<"test">>, <<"test">>], Document),
-
-    {Part, _Rest} = erlang:split_binary(Encoded, byte_size(Encoded) - 100),
-
-    {error, {invalid_bson, _Data}} = nbson:decode(Part),
-    ok.
 
 proplists() ->
     [{userdata, [{doc, "Tests various previously untested cases."}]}].
 proplists(_Config) ->
-    {ok, <<5, 0, 0, 0, 0>>} = nbson:encode([{}]),
+    {ok, <<5, 0, 0, 0, 0>>} = nbson:encode(#{}),
 
     {ok,
         <<46, 0, 0, 0, 4, 97, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
@@ -486,4 +347,12 @@ various() ->
     [{userdata, [{doc, "Tests various previously untested cases."}]}].
 various(_Config) ->
     {ok, <<>>} = nbson:encode(undefined),
-    {ok, <<5, 0, 0, 0, 0>>} = nbson:encode(#{}).
+    {ok, <<5, 0, 0, 0, 0>>} = nbson:encode(#{}),
+
+    <<"three">> = nbson:get([<<"arr">>, <<"two">>], #{<<"arr">> => #{<<"two">> => <<"three">>}}),
+    #{<<"two">> := <<"three">>} = nbson:get(<<"arr">>, #{<<"arr">> => #{<<"two">> => <<"three">>}}),
+    undefined = nbson:get([<<"arr">>, <<"three">>], #{<<"arr">> => #{<<"two">> => <<"three">>}}),
+    <<"three">> = nbson:get([<<"arr">>, <<"two">>], [{<<"arr">>, [{<<"two">>, <<"three">>}]}]),
+    undefined = nbson:get([<<"arr">>, <<"three">>], [{<<"arr">>, [{<<"two">>, <<"three">>}]}]).
+
+

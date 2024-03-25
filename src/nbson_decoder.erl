@@ -57,10 +57,10 @@
     Result :: {ok, undefined} | {ok, nbson:document()} | {error, nbson:decode_error_reason()}.
 decode(<<>>) ->
     {ok, undefined};
-decode(<<?INT32(Size), Bin/binary>>) ->
+decode(<<?INT32(Size), _Rest/binary>> = Bin) ->
     case Bin of
-        <<Next:Size/binary>> ->
-            case document(Next, #{}, [document]) of
+        <<Doc:Size/binary>> ->
+            case document(Doc, #{}, [document]) of
                 {error, _Reason} = Error ->
                     Error;
                 Document ->
