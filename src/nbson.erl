@@ -17,32 +17,70 @@
 -export([encode/1, decode/1, get/2]).
 
 %%% TYPES
--type document() :: #{key() => value()} | [{key(), value()}].
+-type map_document() :: #{key() => value()}.
+-type proplist_document() :: [{key(), value()}].
+-type document() :: map_document() | proplist_document().
 -type document_path() :: [key()].
 -type key() :: binary().
--type value() :: any().
+-type regex_arg() :: unicode:latin1_chardata() | unicode:chardata() | unicode:external_chardata().
+-type value() ::
+    float()
+    | integer()
+    | binary()
+    | undefined
+    | null
+    | min_key
+    | max_key
+    | true
+    | false
+    | atom()
+    | document()
+    | [value()]
+    | {data, binary, binary()}
+    | {data, function, binary()}
+    | {data, uuid, binary()}
+    | {data, md5, binary()}
+    | {data, encrypted, binary()}
+    | {data, compressed, binary()}
+    | {data, user, binary()}
+    | {object_id, binary()}
+    | erlang:timestamp()
+    | {regex, regex_arg(), regex_arg()}
+    | {pointer, binary(), binary()}
+    | {javascript, map(), binary()}
+    | {javascript, document(), binary()}
+    | {timestamp, non_neg_integer(), non_neg_integer()}.
+-type decode_error_reason() :: invalid_subtype | invalid_bson.
+-type encode_error_reason() ::
+    {invalid_proplist_document, term()}
+    | {not_unicode_regex, {term(), term()}}
+    | {integer_too_large, integer()}.
 
 %%% EXPORT TYPES
 -export_type([
     document/0,
+    map_document/0,
+    proplist_document/0,
     document_path/0,
     key/0,
-    value/0
+    value/0,
+    decode_error_reason/0,
+    encode_error_reason/0
 ]).
 
 %%%-----------------------------------------------------------------------------
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
 -spec encode(Data) -> Result when
-    Data :: undefined | document() | [document()],
-    Result :: {ok, BSON} | {error, term()},
+    Data :: undefined | map_document() | proplist_document(),
+    Result :: {ok, BSON} | {error, encode_error_reason()},
     BSON :: binary().
 encode(Data) ->
     nbson_encoder:encode(Data).
 
 -spec decode(Data) -> Result when
     Data :: binary(),
-    Result :: {ok, [document()]} | {error, term()}.
+    Result :: {ok, undefined} | {ok, document()} | {error, decode_error_reason()}.
 decode(Data) ->
     nbson_decoder:decode(Data).
 

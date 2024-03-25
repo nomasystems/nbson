@@ -64,55 +64,40 @@ decode_errors(_Config) ->
         <<46, 0, 0, 0, 4, 97, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
     BaseMap = #{<<"arr">> => [1, <<"two">>, <<"three">>]},
-    ?assertEqual({ok, [BaseMap]}, nbson:decode(BaseBin)),
+    ?assertEqual({ok, BaseMap}, nbson:decode(BaseBin)),
 
     BaseBin1 =
         <<0, 0, 0, 4, 97, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
-
-    {error, {invalid_bson, Data1}} = nbson:decode(BaseBin1),
-    ct:print("BaseBin1: ~p~n", [Data1]),
+    ?assertEqual({error, invalid_bson}, nbson:decode(BaseBin1)),
 
     BaseBin2 =
         <<46, 0, 0, 4, 97, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
-
-    {error, {invalid_bson, Data2}} = nbson:decode(BaseBin2),
-    ct:print("BaseBin2: ~p~n", [Data2]),
+    ?assertEqual({error, invalid_bson}, nbson:decode(BaseBin2)),
 
     BaseBin3 =
         <<46, 0, 0, 0, 97, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
-
-    {error, {invalid_bson, Data3}} = nbson:decode(BaseBin3),
-    ct:print("BaseBin3: ~p~n", [Data3]),
+    ?assertEqual({error, invalid_bson}, nbson:decode(BaseBin3)),
 
     BaseBin4 =
         <<46, 0, 0, 0, 4, 114, 114, 0, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
-
-    {error, {invalid_bson, Data4}} = nbson:decode(BaseBin4),
-    ct:print("BaseBin4: ~p~n", [Data4]),
+    ?assertEqual({error, invalid_bson}, nbson:decode(BaseBin4)),
 
     BaseBin5 =
         <<46, 0, 0, 0, 4, 97, 114, 114, 36, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
-
-    {error, {invalid_bson, Data5}} = nbson:decode(BaseBin5),
-    ct:print("BaseBin5: ~p~n", [Data5]),
+    ?assertEqual({error, invalid_bson}, nbson:decode(BaseBin5)),
 
     BaseBin6 =
         <<46, 0, 0, 0, 4, 97, 114, 114, 0, 0, 0, 0, 16, 48, 0, 1, 0, 0, 0, 2, 49, 0, 4, 0, 0, 0,
             116, 119, 111, 0, 2, 50, 0, 6, 0, 0, 0, 116, 104, 114, 101, 101, 0, 0, 0>>,
+    ?assertEqual({error, invalid_bson}, nbson:decode(BaseBin6)),
 
-    {error, {invalid_bson, Data6}} = nbson:decode(BaseBin6),
-    ct:print("BaseBin6: ~p~n", [Data6]),
-
-    BaseBin7 =
-        <<46, 0, 0, 0, 4, 97, 114, 114, 0, 36, 0, 0, 0>>,
-
-    {error, {invalid_bson, Data7}} = nbson:decode(BaseBin7),
-    ct:print("BaseBin7: ~p~n", [Data7]),
+    BaseBin7 = <<46, 0, 0, 0, 4, 97, 114, 114, 0, 36, 0, 0, 0>>,
+    ?assertEqual({error, invalid_bson}, nbson:decode(BaseBin7)),
 
     ok.
 
