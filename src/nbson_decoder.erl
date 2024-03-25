@@ -57,17 +57,12 @@
     Result :: {ok, undefined} | {ok, nbson:document()} | {error, nbson:decode_error_reason()}.
 decode(<<>>) ->
     {ok, undefined};
-decode(<<?INT32(Size), _Rest/binary>> = Bin) ->
-    case Bin of
-        <<Doc:Size/binary>> ->
-            case document(Doc, #{}, [document]) of
-                {error, _Reason} = Error ->
-                    Error;
-                Document ->
-                    {ok, Document}
-            end;
-        _Other ->
-            {error, invalid_bson}
+decode(<<?INT32(Size), Doc/binary>> = Bin) when size(Doc) == (Size - 4) ->
+    case document(Bin, #{}, [document]) of
+        {error, _Reason} = Error ->
+            Error;
+        Document ->
+            {ok, Document}
     end;
 decode(_Other) ->
     {error, invalid_bson}.

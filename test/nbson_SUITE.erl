@@ -354,5 +354,3 @@ various(_Config) ->
     undefined = nbson:get([<<"arr">>, <<"three">>], #{<<"arr">> => #{<<"two">> => <<"three">>}}),
     <<"three">> = nbson:get([<<"arr">>, <<"two">>], [{<<"arr">>, [{<<"two">>, <<"three">>}]}]),
     undefined = nbson:get([<<"arr">>, <<"three">>], [{<<"arr">>, [{<<"two">>, <<"three">>}]}]).
-
-

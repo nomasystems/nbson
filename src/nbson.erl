@@ -72,7 +72,7 @@
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
 -spec encode(Data) -> Result when
-    Data :: undefined | document(),
+    Data :: undefined | map_document() | proplist_document(),
     Result :: {ok, BSON} | {error, encode_error_reason()},
     BSON :: binary().
 encode(Data) ->
