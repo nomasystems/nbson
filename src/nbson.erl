@@ -44,7 +44,7 @@
     | {data, compressed, binary()}
     | {data, user, binary()}
     | {object_id, binary()}
-    | {non_neg_integer(), non_neg_integer(), non_neg_integer()}
+    | erlang:timestamp()
     | {regex, regex_arg(), regex_arg()}
     | {pointer, binary(), binary()}
     | {javascript, map(), binary()}
