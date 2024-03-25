@@ -26,8 +26,7 @@
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
 -spec encode(Data) -> Result when
-    Data ::
-        undefined | [{}] | nbson:map_document() | nbson:proplist_document() | [nbson:document()],
+    Data :: undefined | nbson:document(),
     Result :: {ok, BSON} | {error, nbson:encode_error_reason()},
     BSON :: binary().
 encode(undefined) ->
@@ -41,17 +40,13 @@ encode(Document) when is_map(Document) ->
         Encoded ->
             {ok, Encoded}
     end;
-encode([{}]) ->
-    {ok, ?EMPTY_DOC};
 encode([{K, _V} | _Rest] = Data) when is_binary(K) ->
     case encode_proplist(Data) of
         {error, _Reason} = Error ->
             Error;
         Encoded ->
             {ok, Encoded}
-    end;
-encode(Data) when is_list(Data), is_map(hd(Data)) ->
-    encode_map_list(Data, <<>>).
+    end.
 
 %%%-----------------------------------------------------------------------------
 %%% INTERNAL FUNCTIONS
@@ -86,20 +81,6 @@ encode_map(Document) ->
             Error;
         Encoded ->
             <<?INT32(byte_size(Encoded) + 5), Encoded/binary, ?NULL>>
-    end.
-
--spec encode_map_list(MapList, Acc) -> Result when
-    MapList :: [nbson:map_document()],
-    Acc :: binary(),
-    Result :: {ok, binary()} | {error, nbson:encode_error_reason()}.
-encode_map_list([], Acc) ->
-    {ok, Acc};
-encode_map_list([Doc | Rest], Acc) ->
-    case encode_map(Doc) of
-        {error, _Reason} = Error ->
-            Error;
-        Bin ->
-            encode_map_list(Rest, <<Acc/binary, Bin/binary>>)
     end.
 
 -spec encode_proplist(Data) -> Result when

@@ -54,43 +54,23 @@
 %%%-----------------------------------------------------------------------------
 -spec decode(Data) -> Result when
     Data :: binary(),
-    Result :: {ok, [nbson:document()]} | {error, nbson:decode_error_reason()}.
+    Result :: {ok, undefined} | {ok, nbson:document()} | {error, nbson:decode_error_reason()}.
 decode(<<>>) ->
-    {ok, []};
-decode(Bin) when is_binary(Bin) ->
-    case decode_docs(Bin, []) of
-        {error, _Reason} = Error ->
-            Error;
-        Decoded ->
-            {ok, Decoded}
-    end.
-
--spec decode_docs(Data, Acc) -> Result when
-    Data :: binary(),
-    Acc :: [nbson:document()],
-    Result :: [nbson:document()] | {error, nbson:decode_error_reason()}.
-decode_docs(<<>>, Acc) ->
-    lists:reverse(Acc);
-decode_docs(<<?INT32(Size), _Rest/binary>> = Data, Acc) ->
-    decode_docs(Data, Size, Acc).
-
--spec decode_docs(Data, Size, Acc) -> Result when
-    Data :: binary(),
-    Size :: integer(),
-    Acc :: [nbson:document()],
-    Result :: {ok, [nbson:document()]} | {error, nbson:decode_error_reason()}.
-decode_docs(<<Bin/binary>>, Size, Acc) ->
+    {ok, undefined};
+decode(<<?INT32(Size), Bin/binary>>) ->
     case Bin of
-        <<Next:Size/binary, Rest/binary>> ->
+        <<Next:Size/binary>> ->
             case document(Next, #{}, [document]) of
                 {error, _Reason} = Error ->
                     Error;
                 Document ->
-                    decode_docs(Rest, [Document | Acc])
+                    {ok, Document}
             end;
         _Other ->
-            {error, {invalid_bson, lists:reverse(Acc)}}
-    end.
+            {error, invalid_bson}
+    end;
+decode(_Other) ->
+    {error, invalid_bson}.
 
 %%%-----------------------------------------------------------------------------
 %%% INTERNAL FUNCTIONS
@@ -126,8 +106,8 @@ next(<<Bin/binary>>, Current, [jscodews | Next]) ->
     document(Bin, #{}, [javascript, Current | Next]);
 next(<<Bin/binary>>, Current, [javascript, Code | Next]) ->
     next(Bin, {javascript, Current, Code}, Next);
-next(<<_Bin/binary>>, Current, _Next) ->
-    {error, {invalid_bson, Current}}.
+next(<<_Bin/binary>>, _Current, _Next) ->
+    {error, invalid_bson}.
 
 -spec document(Data, Elements, Next) -> Result when
     Data :: binary(),

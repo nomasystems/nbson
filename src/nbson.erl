@@ -34,7 +34,7 @@
     | true
     | false
     | atom()
-    | nbson:document()
+    | document()
     | [value()]
     | {data, binary, binary()}
     | {data, function, binary()}
@@ -50,9 +50,7 @@
     | {javascript, map(), binary()}
     | {javascript, document(), binary()}
     | {timestamp, non_neg_integer(), non_neg_integer()}.
--type decode_error_reason() ::
-    invalid_subtype
-    | {invalid_bson, term()}.
+-type decode_error_reason() :: invalid_subtype | invalid_bson.
 -type encode_error_reason() ::
     {invalid_proplist_document, term()}
     | {not_unicode_regex, {term(), term()}}
@@ -74,7 +72,7 @@
 %%% EXTERNAL EXPORTS
 %%%-----------------------------------------------------------------------------
 -spec encode(Data) -> Result when
-    Data :: undefined | [{}] | map_document() | proplist_document() | [document()],
+    Data :: undefined | document(),
     Result :: {ok, BSON} | {error, encode_error_reason()},
     BSON :: binary().
 encode(Data) ->
@@ -82,7 +80,7 @@ encode(Data) ->
 
 -spec decode(Data) -> Result when
     Data :: binary(),
-    Result :: {ok, [document()]} | {error, decode_error_reason()}.
+    Result :: {ok, undefined} | {ok, document()} | {error, decode_error_reason()}.
 decode(Data) ->
     nbson_decoder:decode(Data).
 
