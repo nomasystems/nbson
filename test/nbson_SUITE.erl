@@ -33,6 +33,7 @@ all() ->
         double,
         embdoc,
         int64,
+        int64_explicit,
         js,
         js_ws,
         max_key,
@@ -225,6 +226,13 @@ int64(_Config) ->
     BaseBin = <<20, 0, 0, 0, 18, 105, 110, 116, 54, 52, 0, 188, 104, 151, 147, 227, 13, 1, 23, 0>>,
     BaseMap = #{<<"int64">> => 1657621408933963964},
     {ok, BaseMap} = nbson:decode(BaseBin),
+    {ok, BaseBin} = nbson:encode(BaseMap).
+
+int64_explicit() ->
+    [{userdata, [{doc, "Tests explicit int64 data type BSON decoder API."}]}].
+int64_explicit(_Config) ->
+    BaseBin = <<20, 0, 0, 0, 18, 105, 110, 116, 54, 52, 0, 64, 0, 0, 0, 0, 0, 0, 0, 0>>,
+    BaseMap = #{<<"int64">> => {long, 64}},
     {ok, BaseBin} = nbson:encode(BaseMap).
 
 js() ->

@@ -198,13 +198,17 @@ encode_value({javascript, Scope, Code}) when is_map(Scope), is_binary(Code) ->
             Encoded = <<?INT32(byte_size(CStringCode)), CStringCode/binary, (EncodedScope)/binary>>,
             {?JSCODEWS_TYPE, <<?INT32(byte_size(Encoded) + 4), Encoded/binary>>}
     end;
-encode_value(V) when is_integer(V), -16#80000000 =< V, V =< 16#7fffffff ->
-    {?INT32_TYPE, <<?INT32(V)>>};
 encode_value({timestamp, Inc, Time}) ->
     {?TIMESTAMP_TYPE, <<?INT32(Inc), ?INT32(Time)>>};
+encode_value(V) when is_integer(V), -16#80000000 =< V, V =< 16#7fffffff ->
+    {?INT32_TYPE, <<?INT32(V)>>};
 encode_value(V) when is_integer(V), -16#8000000000000000 =< V, V =< 16#7fffffffffffffff ->
     {?INT64_TYPE, <<?INT64(V)>>};
 encode_value(V) when is_integer(V) ->
+    {error, {integer_too_large, V}};
+encode_value({long, V}) when is_integer(V), -16#8000000000000000 =< V, V =< 16#7fffffffffffffff ->
+    {?INT64_TYPE, <<?INT64(V)>>};
+encode_value({long, V}) when is_integer(V) ->
     {error, {integer_too_large, V}}.
 
 -spec foldwhile(F, AccIn, List) -> Result when

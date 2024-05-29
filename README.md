@@ -46,7 +46,8 @@ The following table represents the association between Erlang types and BSON typ
 | `{javascript, [ tuple() \| _ ], binary()}` | JavaScript code with scope (15) |
 | `I32 :: integer() when -16#80000000 =< I32, I32 =< 16#7fffffff` | 32-bit integer (16) |
 | `{timestamp, binary(), binary()}` | Timestamp (17) |
-| `I64 :: integer() when -16#80000000 =< I64, I64 =< 16#7fffffff` | 64-bit integer (18) |
+| `I64 :: integer() when -16#8000000000000000 =< I64, I64 =< 16#7fffffffffffffff` | 64-bit integer (18) |
+| `{long, I64 :: integer()} when -16#8000000000000000 =< I64, I64 =< 16#7fffffffffffffff` | 64-bit integer (18) |
 | `max_key` | Max key (127) |
 | `min_key` | Min key (-1) |
 

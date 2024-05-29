@@ -75,7 +75,7 @@ decode(_Other) ->
     Current :: term(),
     Next :: [term()],
     Result :: nbson:document() | {error, nbson:decode_error_reason()}.
-next(<<>>, Current, [document]) ->
+next(<<>>, Current, [document]) when is_map(Current) ->
     Current;
 next(<<Bin/binary>>, Current, [evalue, Type, ?EDOCUMENT, Elements | Next]) ->
     evalue(Bin, Type, [elist, Current, Elements | Next]);
@@ -95,7 +95,7 @@ next(<<Bin/binary>>, Current, [pointer, Collection | Next]) ->
     next(Bin, {pointer, Collection, Current}, Next);
 next(<<Bin/binary>>, Current, [jscode | Next]) ->
     next(Bin, {javascript, #{}, Current}, Next);
-next(<<Bin/binary>>, Current, [label | Next]) ->
+next(<<Bin/binary>>, Current, [label | Next]) when is_binary(Current) ->
     next(Bin, binary_to_atom(Current, utf8), Next);
 next(<<Bin/binary>>, Current, [jscodews | Next]) ->
     document(Bin, #{}, [javascript, Current | Next]);

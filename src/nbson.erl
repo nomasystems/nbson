@@ -26,6 +26,7 @@
 -type value() ::
     float()
     | integer()
+    | {long, integer()}
     | binary()
     | undefined
     | null
