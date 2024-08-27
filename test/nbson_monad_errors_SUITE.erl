@@ -104,9 +104,14 @@ decode_errors(_Config) ->
 encode_errors() ->
     [{userdata, [{doc, "Tests errors on BSON encoder API."}]}].
 encode_errors(_Config) ->
-    BaseMap = #{<<"int64">> => (16#7fffffffffffffff + 1)},
-    {error, {integer_too_large, V}} = nbson:encode(BaseMap),
+    TooBigInt = 16#7fffffffffffffff + 1,
+    BaseMap = #{<<"int64">> => TooBigInt},
+    {error, {integer_too_large, TooBigInt}} = nbson:encode(BaseMap),
 
-    BasePL = [{<<"int64">>, (16#7fffffffffffffff + 1)}],
-    {error, {integer_too_large, V}} = nbson:encode(BasePL),
+    BasePL = [{<<"int64">>, TooBigInt}],
+    {error, {integer_too_large, TooBigInt}} = nbson:encode(BasePL),
+
+    BaseLongPL = [{<<"int64">>, {long, TooBigInt}}],
+    {error, {integer_too_large, TooBigInt}} = nbson:encode(BaseLongPL),
+
     ok.
