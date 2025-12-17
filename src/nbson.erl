@@ -23,6 +23,14 @@
 -type document_path() :: [key()].
 -type key() :: binary().
 -type regex_arg() :: unicode:latin1_chardata() | unicode:chardata() | unicode:external_chardata().
+-type int8() :: -128..127.
+-type vector_padding() :: 0..7.
+-type float32_value() :: float() | integer() | infinity | neg_infinity.
+-type vector() ::
+    {vector, int8, [int8()]}
+    | {vector, float32, [float32_value()]}
+    | {vector, packed_bit, binary()}
+    | {vector, packed_bit, binary(), vector_padding()}.
 -type value() ::
     float()
     | integer()
@@ -44,6 +52,7 @@
     | {data, encrypted, binary()}
     | {data, compressed, binary()}
     | {data, user, binary()}
+    | vector()
     | {object_id, binary()}
     | erlang:timestamp()
     | {regex, regex_arg(), regex_arg()}
@@ -51,11 +60,20 @@
     | {javascript, map(), binary()}
     | {javascript, document(), binary()}
     | {timestamp, non_neg_integer(), non_neg_integer()}.
--type decode_error_reason() :: invalid_subtype | invalid_bson.
+-type vector_error_reason() ::
+    {invalid_vector_dtype, non_neg_integer()}
+    | {invalid_vector_padding, integer()}
+    | {invalid_vector_int8_padding, non_neg_integer()}
+    | {invalid_vector_float32_padding, non_neg_integer()}
+    | {invalid_vector_float32_length, non_neg_integer()}
+    | {invalid_vector_packed_bit_empty_with_padding, non_neg_integer()}
+    | {invalid_vector_int8_value, integer()}.
+-type decode_error_reason() :: invalid_subtype | invalid_bson | vector_error_reason().
 -type encode_error_reason() ::
     {invalid_proplist_document, term()}
     | {not_unicode_regex, {term(), term()}}
-    | {integer_too_large, integer()}.
+    | {integer_too_large, integer()}
+    | vector_error_reason().
 
 %%% EXPORT TYPES
 -export_type([
@@ -65,8 +83,13 @@
     document_path/0,
     key/0,
     value/0,
+    vector/0,
+    int8/0,
+    float32_value/0,
+    vector_padding/0,
     decode_error_reason/0,
-    encode_error_reason/0
+    encode_error_reason/0,
+    vector_error_reason/0
 ]).
 
 %%%-----------------------------------------------------------------------------

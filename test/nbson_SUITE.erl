@@ -46,7 +46,18 @@ all() ->
         timestamp,
         undef,
         proplists,
-        various
+        various,
+        vector_int8,
+        vector_int8_empty,
+        vector_int8_errors,
+        vector_float32,
+        vector_float32_empty,
+        vector_float32_infinity,
+        vector_float32_errors,
+        vector_packed_bit,
+        vector_packed_bit_with_padding,
+        vector_packed_bit_empty,
+        vector_packed_bit_errors
     ].
 
 %%%-----------------------------------------------------------------------------
@@ -362,3 +373,154 @@ various(_Config) ->
     undefined = nbson:get([<<"arr">>, <<"three">>], #{<<"arr">> => #{<<"two">> => <<"three">>}}),
     <<"three">> = nbson:get([<<"arr">>, <<"two">>], [{<<"arr">>, [{<<"two">>, <<"three">>}]}]),
     undefined = nbson:get([<<"arr">>, <<"three">>], [{<<"arr">>, [{<<"two">>, <<"three">>}]}]).
+
+%%%-----------------------------------------------------------------------------
+%%% VECTOR TEST CASES
+%%%-----------------------------------------------------------------------------
+vector_int8() ->
+    [{userdata, [{doc, "Tests vector int8 data type BSON encoding/decoding."}]}].
+vector_int8(_Config) ->
+    %% Test case from spec: Simple Vector INT8 [127, 7]
+    %% BSON hex: 1600000005766563746F7200040000000903007F0700
+    BaseBin = <<22, 0, 0, 0, 5, 118, 101, 99, 116, 111, 114, 0, 4, 0, 0, 0, 9, 3, 0, 127, 7, 0>>,
+    BaseMap = #{<<"vector">> => {vector, int8, [127, 7]}},
+    {ok, BaseMap} = nbson:decode(BaseBin),
+    {ok, BaseBin} = nbson:encode(BaseMap),
+    %% Test negative values
+    NegMap = #{<<"vector">> => {vector, int8, [-128, -1, 0, 1, 127]}},
+    {ok, NegBin} = nbson:encode(NegMap),
+    {ok, NegMap} = nbson:decode(NegBin).
+
+vector_int8_empty() ->
+    [{userdata, [{doc, "Tests empty vector int8 data type BSON encoding/decoding."}]}].
+vector_int8_empty(_Config) ->
+    %% Test case from spec: Empty Vector INT8 []
+    %% BSON hex: 1400000005766563746F72000200000009030000
+    BaseBin = <<20, 0, 0, 0, 5, 118, 101, 99, 116, 111, 114, 0, 2, 0, 0, 0, 9, 3, 0, 0>>,
+    BaseMap = #{<<"vector">> => {vector, int8, []}},
+    {ok, BaseMap} = nbson:decode(BaseBin),
+    {ok, BaseBin} = nbson:encode(BaseMap).
+
+vector_int8_errors() ->
+    [{userdata, [{doc, "Tests vector int8 error handling."}]}].
+vector_int8_errors(_Config) ->
+    %% INT8 value overflow (128 is out of range)
+    {error, {invalid_vector_int8_value, 128}} =
+        nbson:encode(#{<<"vector">> => {vector, int8, [128]}}),
+    %% INT8 value underflow (-129 is out of range)
+    {error, {invalid_vector_int8_value, -129}} =
+        nbson:encode(#{<<"vector">> => {vector, int8, [-129]}}),
+    %% INT8 with padding (invalid BSON)
+    %% BSON hex: 1600000005766563746F7200040000000903037F0700 (padding=3)
+    InvalidPaddingBin =
+        <<22, 0, 0, 0, 5, 118, 101, 99, 116, 111, 114, 0, 4, 0, 0, 0, 9, 3, 3, 127, 7, 0>>,
+    {error, {invalid_vector_int8_padding, 3}} = nbson:decode(InvalidPaddingBin).
+
+vector_float32() ->
+    [{userdata, [{doc, "Tests vector float32 data type BSON encoding/decoding."}]}].
+vector_float32(_Config) ->
+    %% Test case from spec: Simple Vector FLOAT32 [127.0, 7.0]
+    %% BSON hex: 1C00000005766563746F72000A0000000927000000FE420000E04000
+    BaseBin =
+        <<28, 0, 0, 0, 5, 118, 101, 99, 116, 111, 114, 0, 10, 0, 0, 0, 9, 39, 0, 0, 0, 254, 66, 0,
+            0, 224, 64, 0>>,
+    BaseMap = #{<<"vector">> => {vector, float32, [127.0, 7.0]}},
+    {ok, BaseMap} = nbson:decode(BaseBin),
+    {ok, BaseBin} = nbson:encode(BaseMap),
+    %% Test with decimals and negative value: [127.7, -7.7]
+    %% BSON hex: 1C00000005766563746F72000A0000000927006666FF426666F6C000
+    DecBin =
+        <<28, 0, 0, 0, 5, 118, 101, 99, 116, 111, 114, 0, 10, 0, 0, 0, 9, 39, 0, 102, 102, 255, 66,
+            102, 102, 246, 192, 0>>,
+    DecMap = #{<<"vector">> => {vector, float32, [127.69999694824219, -7.699999809265137]}},
+    {ok, DecMap} = nbson:decode(DecBin).
+
+vector_float32_empty() ->
+    [{userdata, [{doc, "Tests empty vector float32 data type BSON encoding/decoding."}]}].
+vector_float32_empty(_Config) ->
+    %% Test case from spec: Empty Vector FLOAT32 []
+    %% BSON hex: 1400000005766563746F72000200000009270000
+    BaseBin = <<20, 0, 0, 0, 5, 118, 101, 99, 116, 111, 114, 0, 2, 0, 0, 0, 9, 39, 0, 0>>,
+    BaseMap = #{<<"vector">> => {vector, float32, []}},
+    {ok, BaseMap} = nbson:decode(BaseBin),
+    {ok, BaseBin} = nbson:encode(BaseMap).
+
+vector_float32_infinity() ->
+    [{userdata, [{doc, "Tests vector float32 with infinity values."}]}].
+vector_float32_infinity(_Config) ->
+    %% Test case from spec: Infinity Vector FLOAT32 [-Infinity, 0.0, Infinity]
+    %% BSON hex: 2000000005766563746F72000E000000092700000080FF000000000000807F00
+    BaseBin =
+        <<32, 0, 0, 0, 5, 118, 101, 99, 116, 111, 114, 0, 14, 0, 0, 0, 9, 39, 0, 0, 0, 128, 255, 0,
+            0, 0, 0, 0, 0, 128, 127, 0>>,
+    BaseMap = #{<<"vector">> => {vector, float32, [neg_infinity, 0.0, infinity]}},
+    {ok, BaseMap} = nbson:decode(BaseBin),
+    {ok, BaseBin} = nbson:encode(BaseMap).
+
+vector_float32_errors() ->
+    [{userdata, [{doc, "Tests vector float32 error handling."}]}].
+vector_float32_errors(_Config) ->
+    %% FLOAT32 with padding (invalid BSON)
+    %% BSON hex: 1C00000005766563746F72000A0000000927030000FE420000E04000 (padding=3)
+    InvalidPaddingBin =
+        <<28, 0, 0, 0, 5, 118, 101, 99, 116, 111, 114, 0, 10, 0, 0, 0, 9, 39, 3, 0, 0, 254, 66, 0,
+            0, 224, 64, 0>>,
+    {error, {invalid_vector_float32_padding, 3}} = nbson:decode(InvalidPaddingBin),
+    %% Insufficient vector data (3 bytes, not multiple of 4)
+    %% BSON hex: 1700000005766563746F7200050000000927002A2A2A00
+    InvalidLengthBin =
+        <<23, 0, 0, 0, 5, 118, 101, 99, 116, 111, 114, 0, 5, 0, 0, 0, 9, 39, 0, 42, 42, 42, 0>>,
+    {error, {invalid_vector_float32_length, 3}} = nbson:decode(InvalidLengthBin).
+
+vector_packed_bit() ->
+    [{userdata, [{doc, "Tests vector packed_bit data type BSON encoding/decoding."}]}].
+vector_packed_bit(_Config) ->
+    %% Test case from spec: Simple Vector PACKED_BIT [127, 7]
+    %% BSON hex: 1600000005766563746F7200040000000910007F0700
+    BaseBin =
+        <<22, 0, 0, 0, 5, 118, 101, 99, 116, 111, 114, 0, 4, 0, 0, 0, 9, 16, 0, 127, 7, 0>>,
+    BaseMap = #{<<"vector">> => {vector, packed_bit, <<127, 7>>}},
+    {ok, BaseMap} = nbson:decode(BaseBin),
+    {ok, BaseBin} = nbson:encode(BaseMap).
+
+vector_packed_bit_with_padding() ->
+    [{userdata, [{doc, "Tests vector packed_bit with padding BSON encoding/decoding."}]}].
+vector_packed_bit_with_padding(_Config) ->
+    %% Test case from spec: PACKED_BIT with padding [127, 8], padding=3
+    %% BSON hex: 1600000005766563746F7200040000000910037F0800
+    BaseBin =
+        <<22, 0, 0, 0, 5, 118, 101, 99, 116, 111, 114, 0, 4, 0, 0, 0, 9, 16, 3, 127, 8, 0>>,
+    BaseMap = #{<<"vector">> => {vector, packed_bit, <<127, 8>>, 3}},
+    {ok, BaseMap} = nbson:decode(BaseBin),
+    {ok, BaseBin} = nbson:encode(BaseMap).
+
+vector_packed_bit_empty() ->
+    [{userdata, [{doc, "Tests empty vector packed_bit BSON encoding/decoding."}]}].
+vector_packed_bit_empty(_Config) ->
+    %% Test case from spec: Empty Vector PACKED_BIT []
+    %% BSON hex: 1400000005766563746F72000200000009100000
+    BaseBin = <<20, 0, 0, 0, 5, 118, 101, 99, 116, 111, 114, 0, 2, 0, 0, 0, 9, 16, 0, 0>>,
+    BaseMap = #{<<"vector">> => {vector, packed_bit, <<>>}},
+    {ok, BaseMap} = nbson:decode(BaseBin),
+    {ok, BaseBin} = nbson:encode(BaseMap).
+
+vector_packed_bit_errors() ->
+    [{userdata, [{doc, "Tests vector packed_bit error handling."}]}].
+vector_packed_bit_errors(_Config) ->
+    %% Empty with non-zero padding (encode error)
+    {error, {invalid_vector_packed_bit_empty_with_padding, 1}} =
+        nbson:encode(#{<<"vector">> => {vector, packed_bit, <<>>, 1}}),
+    %% Empty with non-zero padding (decode error)
+    %% BSON hex: 1400000005766563746F72000200000009100100 (padding=1, empty data)
+    EmptyPaddingBin =
+        <<20, 0, 0, 0, 5, 118, 101, 99, 116, 111, 114, 0, 2, 0, 0, 0, 9, 16, 1, 0>>,
+    {error, {invalid_vector_packed_bit_empty_with_padding, 1}} = nbson:decode(EmptyPaddingBin),
+    %% Padding exceeds maximum (8)
+    %% BSON hex: 1500000005766563746F7200030000000910080100 (padding=8)
+    ExceedPaddingBin =
+        <<21, 0, 0, 0, 5, 118, 101, 99, 116, 111, 114, 0, 3, 0, 0, 0, 9, 16, 8, 1, 0>>,
+    {error, {invalid_vector_padding, 8}} = nbson:decode(ExceedPaddingBin),
+    %% Invalid dtype
+    InvalidDtypeBin =
+        <<20, 0, 0, 0, 5, 118, 101, 99, 116, 111, 114, 0, 2, 0, 0, 0, 9, 255, 0, 0>>,
+    {error, {invalid_vector_dtype, 255}} = nbson:decode(InvalidDtypeBin).
