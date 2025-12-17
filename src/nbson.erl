@@ -27,7 +27,7 @@
 -type vector_padding() :: 0..7.
 -type float32_value() :: float() | integer() | infinity | neg_infinity.
 -type vector() ::
-    {vector, int8, [int8()]}
+    {vector, int8, [integer()]}
     | {vector, float32, [float32_value()]}
     | {vector, packed_bit, binary()}
     | {vector, packed_bit, binary(), vector_padding()}.
