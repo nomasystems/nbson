@@ -277,7 +277,7 @@ map_fold_encode(Label, Value, Acc) ->
     Values :: [integer()],
     Result :: {?BIN_TYPE, binary()} | {error, nbson:encode_error_reason()}.
 encode_vector_int8(Values) ->
-    case encode_int8_values(Values, <<>>) of
+    case encode_int8_values(Values) of
         {error, _Reason} = Error ->
             Error;
         Data ->
@@ -287,16 +287,18 @@ encode_vector_int8(Values) ->
             >>}
     end.
 
--spec encode_int8_values(Values, Acc) -> Result when
+-spec encode_int8_values(Values) -> Result when
     Values :: [integer()],
-    Acc :: binary(),
     Result :: binary() | {error, nbson:encode_error_reason()}.
-encode_int8_values([], Acc) ->
-    Acc;
-encode_int8_values([V | Rest], Acc) when is_integer(V), V >= -128, V =< 127 ->
-    encode_int8_values(Rest, <<Acc/binary, V:8/signed>>);
-encode_int8_values([V | _Rest], _Acc) ->
-    {error, {invalid_vector_int8_value, V}}.
+encode_int8_values(Values) ->
+    Data = <<<<V:8/signed>> || V <- Values, V >= -128, V =< 127>>,
+    case byte_size(Data) == length(Values) of
+        true ->
+            Data;
+        false ->
+            {value, InvalidValue} = lists:search(fun(V) -> V < -128 orelse V > 127 end, Values),
+            {error, {invalid_vector_int8_value, InvalidValue}}
+    end.
 
 -spec encode_vector_float32(Values) -> Result when
     Values :: [nbson:float32_value()],
