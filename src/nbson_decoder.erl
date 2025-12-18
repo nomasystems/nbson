@@ -246,6 +246,14 @@ string(Base, Len, Next) ->
     SubType :: non_neg_integer(),
     Next :: [term()],
     Result :: nbson:document() | {error, nbson:decode_error_reason()}.
+binary(<<Base/binary>>, Size, 9, Next) ->
+    <<Part:Size/binary, Bin/binary>> = Base,
+    case decode_vector(Part) of
+        {error, _} = Error ->
+            Error;
+        Vector ->
+            next(Bin, Vector, Next)
+    end;
 binary(<<Base/binary>>, Size, SubType, Next) ->
     <<Part:Size/binary, Bin/binary>> = Base,
     case subtype_decode(SubType) of
@@ -279,3 +287,61 @@ subtype_decode(128) ->
     user;
 subtype_decode(_) ->
     {error, invalid_subtype}.
+
+%%%-----------------------------------------------------------------------------
+%%% VECTOR DECODING FUNCTIONS
+%%%-----------------------------------------------------------------------------
+-define(VECTOR_DTYPE_INT8, 16#03).
+-define(VECTOR_DTYPE_FLOAT32, 16#27).
+-define(VECTOR_DTYPE_PACKED_BIT, 16#10).
+
+-spec decode_vector(Data) -> Result when
+    Data :: binary(),
+    Result :: nbson:vector() | {error, nbson:vector_error_reason()}.
+decode_vector(<<DType:8, Padding:8, VectorData/binary>>) ->
+    case DType of
+        ?VECTOR_DTYPE_INT8 when Padding =:= 0 ->
+            {vector, int8, decode_int8_values(VectorData, [])};
+        ?VECTOR_DTYPE_INT8 ->
+            {error, {invalid_vector_int8_padding, Padding}};
+        ?VECTOR_DTYPE_FLOAT32 when Padding =:= 0, byte_size(VectorData) rem 4 =:= 0 ->
+            {vector, float32, decode_float32_values(VectorData, [])};
+        ?VECTOR_DTYPE_FLOAT32 when Padding =:= 0 ->
+            {error, {invalid_vector_float32_length, byte_size(VectorData)}};
+        ?VECTOR_DTYPE_FLOAT32 ->
+            {error, {invalid_vector_float32_padding, Padding}};
+        ?VECTOR_DTYPE_PACKED_BIT when Padding > 7 ->
+            {error, {invalid_vector_padding, Padding}};
+        ?VECTOR_DTYPE_PACKED_BIT when Padding > 0, byte_size(VectorData) =:= 0 ->
+            {error, {invalid_vector_packed_bit_empty_with_padding, Padding}};
+        ?VECTOR_DTYPE_PACKED_BIT when Padding =:= 0 ->
+            {vector, packed_bit, VectorData};
+        ?VECTOR_DTYPE_PACKED_BIT ->
+            {vector, packed_bit, VectorData, Padding};
+        _ ->
+            {error, {invalid_vector_dtype, DType}}
+    end.
+
+-spec decode_int8_values(Data, Acc) -> Result when
+    Data :: binary(),
+    Acc :: [integer()],
+    Result :: [integer()].
+decode_int8_values(<<>>, Acc) ->
+    lists:reverse(Acc);
+decode_int8_values(<<V:8/signed, Rest/binary>>, Acc) ->
+    decode_int8_values(Rest, [V | Acc]).
+
+-spec decode_float32_values(Data, Acc) -> Result when
+    Data :: binary(),
+    Acc :: [nbson:float32_value()],
+    Result :: [nbson:float32_value()].
+decode_float32_values(<<>>, Acc) ->
+    lists:reverse(Acc);
+decode_float32_values(<<0, 0, 128, 127, Rest/binary>>, Acc) ->
+    %% Positive infinity (IEEE 754)
+    decode_float32_values(Rest, [infinity | Acc]);
+decode_float32_values(<<0, 0, 128, 255, Rest/binary>>, Acc) ->
+    %% Negative infinity (IEEE 754)
+    decode_float32_values(Rest, [neg_infinity | Acc]);
+decode_float32_values(<<V:32/little-float, Rest/binary>>, Acc) ->
+    decode_float32_values(Rest, [V | Acc]).

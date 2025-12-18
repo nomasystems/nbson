@@ -158,6 +158,16 @@ encode_value({data, compressed, Data}) when is_binary(Data) ->
     {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(7), Data/binary>>};
 encode_value({data, user, Data}) when is_binary(Data) ->
     {?BIN_TYPE, <<?INT32(byte_size(Data)), ?INT8(128), Data/binary>>};
+encode_value({vector, int8, Values}) when is_list(Values) ->
+    encode_vector_int8(Values);
+encode_value({vector, float32, Values}) when is_list(Values) ->
+    encode_vector_float32(Values);
+encode_value({vector, packed_bit, Data}) when is_binary(Data) ->
+    encode_vector_packed_bit(Data, 0);
+encode_value({vector, packed_bit, Data, Padding}) when
+    is_binary(Data), Padding >= 0, Padding =< 7
+->
+    encode_vector_packed_bit(Data, Padding);
 encode_value(undefined) ->
     {?UNDEF_TYPE, <<>>};
 encode_value({object_id, <<_:96>> = Id}) ->
@@ -254,3 +264,71 @@ map_fold_encode(Label, Value, Acc) ->
         {Type, Payload} ->
             <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Label)), Payload/binary>>
     end.
+
+%%%-----------------------------------------------------------------------------
+%%% VECTOR ENCODING FUNCTIONS
+%%%-----------------------------------------------------------------------------
+-define(VECTOR_SUBTYPE, 9).
+-define(VECTOR_DTYPE_INT8, 16#03).
+-define(VECTOR_DTYPE_FLOAT32, 16#27).
+-define(VECTOR_DTYPE_PACKED_BIT, 16#10).
+
+-spec encode_vector_int8(Values) -> Result when
+    Values :: [integer()],
+    Result :: {?BIN_TYPE, binary()} | {error, nbson:encode_error_reason()}.
+encode_vector_int8(Values) ->
+    case encode_int8_values(Values) of
+        {error, _Reason} = Error ->
+            Error;
+        Data ->
+            VectorData = <<?INT8(?VECTOR_DTYPE_INT8), ?INT8(0), Data/binary>>,
+            {?BIN_TYPE, <<
+                ?INT32(byte_size(VectorData)), ?INT8(?VECTOR_SUBTYPE), VectorData/binary
+            >>}
+    end.
+
+-spec encode_int8_values(Values) -> Result when
+    Values :: [integer()],
+    Result :: binary() | {error, nbson:encode_error_reason()}.
+encode_int8_values(Values) ->
+    Data = <<<<V:8/signed>> || V <- Values, V >= -128, V =< 127>>,
+    case byte_size(Data) == length(Values) of
+        true ->
+            Data;
+        false ->
+            {value, InvalidValue} = lists:search(fun(V) -> V < -128 orelse V > 127 end, Values),
+            {error, {invalid_vector_int8_value, InvalidValue}}
+    end.
+
+-spec encode_vector_float32(Values) -> Result when
+    Values :: [nbson:float32_value()],
+    Result :: {?BIN_TYPE, binary()}.
+encode_vector_float32(Values) ->
+    Data = encode_float32_values(Values, <<>>),
+    VectorData = <<?INT8(?VECTOR_DTYPE_FLOAT32), ?INT8(0), Data/binary>>,
+    {?BIN_TYPE, <<?INT32(byte_size(VectorData)), ?INT8(?VECTOR_SUBTYPE), VectorData/binary>>}.
+
+-spec encode_float32_values(Values, Acc) -> Result when
+    Values :: [nbson:float32_value()],
+    Acc :: binary(),
+    Result :: binary().
+encode_float32_values([], Acc) ->
+    Acc;
+encode_float32_values([infinity | Rest], Acc) ->
+    %% Positive infinity (IEEE 754 single precision)
+    encode_float32_values(Rest, <<Acc/binary, 0, 0, 128, 127>>);
+encode_float32_values([neg_infinity | Rest], Acc) ->
+    %% Negative infinity (IEEE 754 single precision)
+    encode_float32_values(Rest, <<Acc/binary, 0, 0, 128, 255>>);
+encode_float32_values([V | Rest], Acc) when is_number(V) ->
+    encode_float32_values(Rest, <<Acc/binary, V:32/little-float>>).
+
+-spec encode_vector_packed_bit(Data, Padding) -> Result when
+    Data :: binary(),
+    Padding :: nbson:vector_padding(),
+    Result :: {?BIN_TYPE, binary()} | {error, nbson:encode_error_reason()}.
+encode_vector_packed_bit(<<>>, Padding) when Padding > 0 ->
+    {error, {invalid_vector_packed_bit_empty_with_padding, Padding}};
+encode_vector_packed_bit(Data, Padding) ->
+    VectorData = <<?INT8(?VECTOR_DTYPE_PACKED_BIT), ?INT8(Padding), Data/binary>>,
+    {?BIN_TYPE, <<?INT32(byte_size(VectorData)), ?INT8(?VECTOR_SUBTYPE), VectorData/binary>>}.
