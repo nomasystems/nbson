@@ -57,7 +57,7 @@
     Result :: {ok, undefined} | {ok, nbson:document()} | {error, nbson:decode_error_reason()}.
 decode(<<>>) ->
     {ok, undefined};
-decode(<<?INT32(Size), Doc/binary>> = Bin) when size(Doc) == (Size - 4) ->
+decode(<<?INT32(Size), Doc/binary>> = Bin) when byte_size(Doc) == (Size - 4) ->
     case document(Bin, #{}, [document]) of
         {error, _Reason} = Error ->
             Error;
@@ -298,7 +298,9 @@ subtype_decode(_) ->
 -spec decode_vector(Data) -> Result when
     Data :: binary(),
     Result :: nbson:vector() | {error, nbson:vector_error_reason()}.
-decode_vector(<<DType:8, Padding:8, VectorData/binary>>) ->
+decode_vector(Bin) ->
+    <<DType:8, Padding:8>> = binary_part(Bin, 0, 2),
+    VectorData = binary_part(Bin, 2, byte_size(Bin) - 2),
     case DType of
         ?VECTOR_DTYPE_INT8 when Padding =:= 0 ->
             {vector, int8, decode_int8_values(VectorData, [])};
