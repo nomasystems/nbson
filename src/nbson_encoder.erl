@@ -17,7 +17,7 @@
 -include("nbson_bson_types.hrl").
 
 %%% EXTERNAL EXPORTS
--export([encode/1]).
+-export([encode/1, encode_to_iodata/1]).
 
 %%% MACROS
 -define(EMPTY_DOC, <<?INT32(5), ?NULL>>).
@@ -264,6 +264,236 @@ map_fold_encode(Label, Value, Acc) ->
         {Type, Payload} ->
             <<Acc/binary, ?INT8(Type), ?CSTRING(encode_label(Label)), Payload/binary>>
     end.
+
+%%%-----------------------------------------------------------------------------
+%%% IODATA ENCODING (separate code path, no iolist_to_binary)
+%%%-----------------------------------------------------------------------------
+-spec encode_to_iodata(Data) -> Result when
+    Data :: undefined | nbson:document(),
+    Result :: {ok, BSON} | {error, nbson:encode_error_reason()},
+    BSON :: iodata().
+encode_to_iodata(undefined) ->
+    {ok, <<>>};
+encode_to_iodata(Document) when is_map(Document), map_size(Document) == 0 ->
+    {ok, ?EMPTY_DOC};
+encode_to_iodata(Document) when is_map(Document) ->
+    case io_encode_map(Document) of
+        {error, _Reason} = Error ->
+            Error;
+        Encoded ->
+            {ok, Encoded}
+    end;
+encode_to_iodata([{K, _V} | _Rest] = Data) when is_binary(K) ->
+    case io_encode_proplist(Data) of
+        {error, _Reason} = Error ->
+            Error;
+        Encoded ->
+            {ok, Encoded}
+    end.
+
+-spec io_encode_map(Data) -> Result when
+    Data :: nbson:map_document(),
+    Result :: iodata() | {error, nbson:encode_error_reason()}.
+io_encode_map(Document) ->
+    case maps:fold(fun io_map_fold_encode/3, [], Document) of
+        {error, _Reason} = Error ->
+            Error;
+        Acc ->
+            Body = lists:reverse(Acc),
+            Size = iolist_size(Body) + 5,
+            [<<?INT32(Size)>>, Body, <<?NULL>>]
+    end.
+
+-spec io_map_fold_encode(Label, Value, Acc) -> Result when
+    Label :: integer() | binary(),
+    Value :: nbson:value(),
+    Acc :: list() | {error, nbson:encode_error_reason()},
+    Result :: list() | {error, nbson:encode_error_reason()}.
+io_map_fold_encode(_Label, _Value, {error, _} = E) ->
+    E;
+io_map_fold_encode(_Label, undefined, Acc) ->
+    Acc;
+io_map_fold_encode(Label, Value, Acc) ->
+    case io_encode_value(Value) of
+        {error, _Reason} = Error ->
+            Error;
+        {Type, Payload} ->
+            [[<<?INT8(Type), ?CSTRING(encode_label(Label))>>, Payload] | Acc]
+    end.
+
+-spec io_encode_proplist(Data) -> Result when
+    Data :: nbson:proplist_document(),
+    Result :: iodata() | {error, nbson:encode_error_reason()}.
+io_encode_proplist(Proplist) ->
+    case io_encode_proplist(Proplist, []) of
+        {error, _Reason} = Error ->
+            Error;
+        Acc ->
+            Body = lists:reverse(Acc),
+            Size = iolist_size(Body) + 5,
+            [<<?INT32(Size)>>, Body, <<?NULL>>]
+    end.
+
+-spec io_encode_proplist(Data, Acc) -> Result when
+    Data :: list(),
+    Acc :: list(),
+    Result :: list() | {error, nbson:encode_error_reason()}.
+io_encode_proplist([], Acc) ->
+    Acc;
+io_encode_proplist([{_Label, undefined} | Rest], Acc) ->
+    io_encode_proplist(Rest, Acc);
+io_encode_proplist([{Label, Value} | Rest], Acc) ->
+    case io_encode_value(Value) of
+        {error, _Reason} = Error ->
+            Error;
+        {Type, Payload} ->
+            io_encode_proplist(
+                Rest,
+                [[<<?INT8(Type), ?CSTRING(encode_label(Label))>>, Payload] | Acc]
+            )
+    end;
+io_encode_proplist([Other | _Rest], _Acc) ->
+    {error, {invalid_proplist_document, Other}}.
+
+-spec io_encode_list(Data) -> Result when
+    Data :: [nbson:document()],
+    Result :: iodata() | {error, nbson:encode_error_reason()}.
+io_encode_list([]) ->
+    ?EMPTY_DOC;
+io_encode_list(Documents) ->
+    case foldwhile(fun io_list_fold_encode/2, {0, []}, Documents) of
+        {error, _Reason} = Error ->
+            Error;
+        {_, Acc} ->
+            Body = lists:reverse(Acc),
+            Size = iolist_size(Body) + 5,
+            [<<?INT32(Size)>>, Body, <<?NULL>>]
+    end.
+
+-spec io_list_fold_encode(Document, {Pos, Acc}) -> Result when
+    Document :: nbson:document(),
+    Pos :: non_neg_integer(),
+    Acc :: list(),
+    Result :: {non_neg_integer(), list()} | {error, nbson:encode_error_reason()}.
+io_list_fold_encode(Document, {Pos, Acc}) ->
+    case io_encode_value(Document) of
+        {error, _Reason} = Error ->
+            Error;
+        {Type, Payload} ->
+            {Pos + 1, [[<<?INT8(Type), ?CSTRING(encode_label(Pos))>>, Payload] | Acc]}
+    end.
+
+-spec io_encode_value(Value) -> Result when
+    Value :: nbson:value(),
+    Result :: {Type, iodata()} | {error, nbson:encode_error_reason()},
+    Type :: 1..255.
+io_encode_value(V) when is_float(V) ->
+    {?DOUBLE_TYPE, <<?DOUBLE(V)>>};
+io_encode_value(V) when is_binary(V) ->
+    Len = byte_size(V) + 1,
+    {?STRING_TYPE, [<<?INT32(Len)>>, V, <<0>>]};
+io_encode_value(V) when is_map(V) ->
+    case io_encode_map(V) of
+        {error, _Reason} = Error ->
+            Error;
+        Encoded ->
+            {?EMBDOC_TYPE, Encoded}
+    end;
+io_encode_value(V) when is_list(V), is_tuple(hd(V)), is_binary(element(1, hd(V))) ->
+    case io_encode_proplist(V) of
+        {error, _Reason} = Error ->
+            Error;
+        Encoded ->
+            {?EMBDOC_TYPE, Encoded}
+    end;
+io_encode_value(V) when is_list(V) ->
+    case io_encode_list(V) of
+        {error, _Reason} = Error ->
+            Error;
+        EncodedList ->
+            {?ARRAY_TYPE, EncodedList}
+    end;
+io_encode_value({data, binary, Data}) when is_binary(Data) ->
+    {?BIN_TYPE, [<<?INT32(byte_size(Data)), ?INT8(0)>>, Data]};
+io_encode_value({data, function, Data}) when is_binary(Data) ->
+    {?BIN_TYPE, [<<?INT32(byte_size(Data)), ?INT8(1)>>, Data]};
+io_encode_value({data, uuid, Data}) when is_binary(Data) ->
+    {?BIN_TYPE, [<<?INT32(byte_size(Data)), ?INT8(4)>>, Data]};
+io_encode_value({data, md5, Data}) when is_binary(Data) ->
+    {?BIN_TYPE, [<<?INT32(byte_size(Data)), ?INT8(5)>>, Data]};
+io_encode_value({data, encrypted, Data}) when is_binary(Data) ->
+    {?BIN_TYPE, [<<?INT32(byte_size(Data)), ?INT8(6)>>, Data]};
+io_encode_value({data, compressed, Data}) when is_binary(Data) ->
+    {?BIN_TYPE, [<<?INT32(byte_size(Data)), ?INT8(7)>>, Data]};
+io_encode_value({data, user, Data}) when is_binary(Data) ->
+    {?BIN_TYPE, [<<?INT32(byte_size(Data)), ?INT8(128)>>, Data]};
+io_encode_value({vector, int8, Values}) when is_list(Values) ->
+    encode_vector_int8(Values);
+io_encode_value({vector, float32, Values}) when is_list(Values) ->
+    encode_vector_float32(Values);
+io_encode_value({vector, packed_bit, Data}) when is_binary(Data) ->
+    encode_vector_packed_bit(Data, 0);
+io_encode_value({vector, packed_bit, Data, Padding}) when
+    is_binary(Data), Padding >= 0, Padding =< 7
+->
+    encode_vector_packed_bit(Data, Padding);
+io_encode_value(undefined) ->
+    {?UNDEF_TYPE, <<>>};
+io_encode_value({object_id, <<_:96>> = Id}) ->
+    {?OBJID_TYPE, Id};
+io_encode_value(false) ->
+    {?BOOLEAN_TYPE, <<?INT8(0)>>};
+io_encode_value(true) ->
+    {?BOOLEAN_TYPE, <<?INT8(1)>>};
+io_encode_value(max_key) ->
+    {?MAXKEY_TYPE, <<>>};
+io_encode_value(min_key) ->
+    {?MINKEY_TYPE, <<>>};
+io_encode_value({Mega, Sec, Micro}) when is_integer(Mega), is_integer(Sec), is_integer(Micro) ->
+    {?DATETIME_TYPE, <<?INT64(Mega * 1000000000 + Sec * 1000 + Micro div 1000)>>};
+io_encode_value(null) ->
+    {?NULL_TYPE, <<>>};
+io_encode_value({regex, Pattern, Options}) ->
+    case {unicode:characters_to_binary(Pattern), unicode:characters_to_binary(Options)} of
+        {PBin, OBin} when is_binary(PBin) andalso is_binary(OBin) ->
+            {?REGEX_TYPE, [PBin, <<0>>, OBin, <<0>>]};
+        _NotUnicode ->
+            {error, {not_unicode_regex, {Pattern, Options}}}
+    end;
+io_encode_value({pointer, Collection, <<_:96>> = Id}) ->
+    Len = byte_size(Collection) + 1,
+    {?DBPOINTER_TYPE, [<<?INT32(Len)>>, Collection, <<0>>, Id]};
+io_encode_value({javascript, Map, Code}) when is_map(Map), map_size(Map) == 0, is_binary(Code) ->
+    Len = byte_size(Code) + 1,
+    {?JSCODE_TYPE, [<<?INT32(Len)>>, Code, <<0>>]};
+io_encode_value(V) when is_atom(V), V =/= min_key, V =/= max_key ->
+    VBin = atom_to_binary(V, utf8),
+    Len = byte_size(VBin) + 1,
+    {?SYMBOL_TYPE, [<<?INT32(Len)>>, VBin, <<0>>]};
+io_encode_value({javascript, Scope, Code}) when is_map(Scope), is_binary(Code) ->
+    case io_encode_map(Scope) of
+        {error, _Reason} = Error ->
+            Error;
+        EncodedScope ->
+            CodeLen = byte_size(Code) + 1,
+            Encoded = [<<?INT32(CodeLen)>>, Code, <<0>>, EncodedScope],
+            TotalSize = iolist_size(Encoded) + 4,
+            {?JSCODEWS_TYPE, [<<?INT32(TotalSize)>>, Encoded]}
+    end;
+io_encode_value({timestamp, Inc, Time}) ->
+    {?TIMESTAMP_TYPE, <<?INT32(Inc), ?INT32(Time)>>};
+io_encode_value(V) when is_integer(V), -16#80000000 =< V, V =< 16#7fffffff ->
+    {?INT32_TYPE, <<?INT32(V)>>};
+io_encode_value(V) when is_integer(V), -16#8000000000000000 =< V, V =< 16#7fffffffffffffff ->
+    {?INT64_TYPE, <<?INT64(V)>>};
+io_encode_value(V) when is_integer(V) ->
+    {error, {integer_too_large, V}};
+io_encode_value({long, V}) when
+    is_integer(V), -16#8000000000000000 =< V, V =< 16#7fffffffffffffff
+->
+    {?INT64_TYPE, <<?INT64(V)>>};
+io_encode_value({long, V}) when is_integer(V) ->
+    {error, {integer_too_large, V}}.
 
 %%%-----------------------------------------------------------------------------
 %%% VECTOR ENCODING FUNCTIONS
