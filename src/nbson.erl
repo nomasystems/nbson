@@ -14,7 +14,7 @@
 -module(nbson).
 
 %%% EXTERNAL EXPORTS
--export([encode/1, decode/1, get/2]).
+-export([encode/1, encode_to_iodata/1, decode/1, get/2]).
 
 %%% TYPES
 -type map_document() :: #{key() => value()}.
@@ -101,6 +101,13 @@
     BSON :: binary().
 encode(Data) ->
     nbson_encoder:encode(Data).
+
+-spec encode_to_iodata(Data) -> Result when
+    Data :: undefined | map_document() | proplist_document(),
+    Result :: {ok, BSON} | {error, encode_error_reason()},
+    BSON :: iodata().
+encode_to_iodata(Data) ->
+    nbson_encoder:encode_to_iodata(Data).
 
 -spec decode(Data) -> Result when
     Data :: binary(),

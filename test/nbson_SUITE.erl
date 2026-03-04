@@ -47,6 +47,7 @@ all() ->
         undef,
         proplists,
         various,
+        encode_to_iodata,
         vector_int8,
         vector_int8_empty,
         vector_int8_errors,
@@ -373,6 +374,68 @@ various(_Config) ->
     undefined = nbson:get([<<"arr">>, <<"three">>], #{<<"arr">> => #{<<"two">> => <<"three">>}}),
     <<"three">> = nbson:get([<<"arr">>, <<"two">>], [{<<"arr">>, [{<<"two">>, <<"three">>}]}]),
     undefined = nbson:get([<<"arr">>, <<"three">>], [{<<"arr">>, [{<<"two">>, <<"three">>}]}]).
+
+encode_to_iodata() ->
+    [{userdata, [{doc, "Tests encode_to_iodata produces byte-identical output to encode."}]}].
+encode_to_iodata(_Config) ->
+    %% undefined
+    {ok, <<>>} = nbson:encode_to_iodata(undefined),
+    %% empty map
+    {ok, IoEmpty} = nbson:encode_to_iodata(#{}),
+    <<5, 0, 0, 0, 0>> = iolist_to_binary(IoEmpty),
+    %% all value types in a single document
+    Doc = #{
+        <<"string">> => <<"hello">>,
+        <<"int32">> => 42,
+        <<"int64">> => 9999999999,
+        <<"long">> => {long, 64},
+        <<"float">> => 3.14,
+        <<"bool_t">> => true,
+        <<"bool_f">> => false,
+        <<"null">> => null,
+        <<"undef">> => undefined,
+        <<"max_key">> => max_key,
+        <<"min_key">> => min_key,
+        <<"oid">> => {object_id, <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12>>},
+        <<"datetime">> => {1649, 156457, 439000},
+        <<"timestamp">> => {timestamp, 1657622721, 1},
+        <<"regex">> => {regex, <<"/^test/">>, <<"i">>},
+        <<"pointer">> => {pointer, <<"ns">>, <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12>>},
+        <<"js">> => {javascript, #{}, <<"function(x) { return x; }">>},
+        <<"jsws">> => {javascript, #{<<"x">> => 1}, <<"function(x){ return x * x; }">>},
+        <<"symbol">> => ab,
+        <<"bin">> => {data, binary, <<"raw">>},
+        <<"uuid">> => {data, uuid, <<"123e4567">>},
+        <<"md5">> => {data, md5, <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16>>},
+        <<"nested">> => #{<<"a">> => 1, <<"b">> => <<"two">>},
+        <<"array">> => [1, <<"two">>, 3.0],
+        <<"vector_i8">> => {vector, int8, [127, -1, 0]},
+        <<"vector_f32">> => {vector, float32, [1.0, -2.0]},
+        <<"vector_pb">> => {vector, packed_bit, <<127, 7>>}
+    },
+    {ok, BinEncoded} = nbson:encode(Doc),
+    {ok, IoEncoded} = nbson:encode_to_iodata(Doc),
+    BinEncoded = iolist_to_binary(IoEncoded),
+    %% roundtrip through decode
+    {ok, Decoded} = nbson:decode(BinEncoded),
+    {ok, ReEncoded} = nbson:encode(Decoded),
+    {ok, ReIoEncoded} = nbson:encode_to_iodata(Decoded),
+    ReEncoded = iolist_to_binary(ReIoEncoded),
+    %% proplist document
+    PropDoc = [{<<"arr">>, [1, <<"two">>, <<"three">>]}],
+    {ok, PropBin} = nbson:encode(PropDoc),
+    {ok, PropIo} = nbson:encode_to_iodata(PropDoc),
+    PropBin = iolist_to_binary(PropIo),
+    %% nested proplist
+    NestedPropDoc = [{<<"arr">>, [1, <<"two">>, [{<<"four">>, 4}]]}],
+    {ok, NestedPropBin} = nbson:encode(NestedPropDoc),
+    {ok, NestedPropIo} = nbson:encode_to_iodata(NestedPropDoc),
+    NestedPropBin = iolist_to_binary(NestedPropIo),
+    %% error cases match
+    {error, {integer_too_large, _}} =
+        nbson:encode_to_iodata(#{<<"big">> => 1 bsl 64}),
+    {error, {invalid_vector_int8_value, 128}} =
+        nbson:encode_to_iodata(#{<<"v">> => {vector, int8, [128]}}).
 
 %%%-----------------------------------------------------------------------------
 %%% VECTOR TEST CASES
